@@ -1,0 +1,350 @@
+{
+  "name": "grupos",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        64,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        480,
+        272
+      ],
+      "id": "e919d02e-b256-4ba7-9cd3-c30fb8c4265d",
+      "name": "Loop noticias"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "82871198-e4ae-4eca-8360-4a92683fd0bd",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        288
+      ],
+      "id": "7449a57e-138b-4b49-8aea-a32f247ead77",
+      "name": "If_validar mach"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    id, \n    titulo, \n    embedding, \n    tags, \n    estado \nFROM noticias \nWHERE historia_id IS NULL \n  AND tags IS NOT NULL \n  AND estado = 'pendiente'\nORDER BY created_at DESC \nLIMIT 500;",
+        "options": {
+          "queryReplacement": "="
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        288,
+        272
+      ],
+      "id": "9e8a017e-02c8-44a9-9548-3ece4ea5691f",
+      "name": "Busqueda de sin procesar",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- 1. Desvinculamos todas las noticias y reseteamos su estado a pendiente\nUPDATE noticias \nSET historia_id = NULL, \n    estado = 'pendiente';\n\n-- 2. Borramos todas las historias (sin riesgo para las noticias)\nDELETE FROM historias;\n\n-- 3. Reiniciamos el contador de IDs para que la próxima historia sea la ID #1\nALTER SEQUENCE historias_id_seq RESTART WITH 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        96,
+        656
+      ],
+      "id": "e6894563-8373-4554-89ba-3e2f20257281",
+      "name": "Reset Historias",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- 1. Creamos la historia usando la SUMA de ambos embeddings (Evita errores de operadores)\nWITH nueva_historia AS (\n    INSERT INTO historias (titulo_generado, fecha, vector_centro, tags)\n    VALUES (\n        $1, -- Título de la noticia actual\n        NOW(), \n        -- SUMA DIRECTA: Postgres siempre acepta la suma de dos vectores del mismo tipo\n        ($2::vector + $3::vector), \n        ARRAY(SELECT DISTINCT e FROM unnest($4::text[] || $5::text[]) AS e)\n    )\n    RETURNING id\n)\n-- 2. Clasificamos AMBAS noticias con el nuevo historia_id\nUPDATE noticias \nSET historia_id = (SELECT id FROM nueva_historia),\n    estado = 'clasificada'\nWHERE id IN ($6, $7);",
+        "options": {
+          "queryReplacement": "={{ [ \n  $('Loop noticias').item.json.titulo,         // $1\n  $('Loop noticias').item.json.embedding,      // $2: Array puro\n  $json.embedding,                             // $3: Array puro del testigo\n  $('Loop noticias').item.json.tags || [],     // $4\n  $json.tags || [],                            // $5\n  $('Loop noticias').item.json.id,             // $6\n  $json.id                                     // $7\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1600,
+        48
+      ],
+      "id": "9ffd7a49-880d-4241-ac8a-95ec478b1ba3",
+      "name": "Fundar Nueva Historia1",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH input_tags AS (\n    SELECT unnest($3::text[]) as tag\n)\nSELECT \n    h.id, \n    h.titulo_generado,\n    (h.vector_centro <=> $1::vector) as distancia,\n    (\n        SELECT COUNT(*) \n        FROM (\n            SELECT unnest(h.tags) INTERSECT SELECT tag FROM input_tags\n        ) t\n    ) as tags_match\nFROM historias h\nWHERE \n    h.fecha > NOW() - INTERVAL '3 days'\n    AND (\n        (h.vector_centro <=> $1::vector) < 0.18 -- Match Semántico\n        OR\n        ((h.vector_centro <=> $1::vector) < 0.30 AND (\n            SELECT COUNT(*) FROM (\n                SELECT unnest(h.tags) INTERSECT SELECT tag FROM input_tags\n            ) t\n        ) >= 2) -- Match Híbrido\n    )\nORDER BY tags_match DESC, distancia ASC\nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ [ $json.embedding, $json.id, $json.tags ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        288
+      ],
+      "id": "27ae2793-16e8-4865-8d82-7ca62082af03",
+      "name": "¿Hay un grupo para mi?",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH input_tags AS (\n    -- Desarmamos los tags de la noticia actual que viene del loop\n    SELECT unnest($3::text[]) as tag\n)\nSELECT \n    n.id, \n    n.embedding, \n    n.tags\nFROM noticias n\nWHERE n.historia_id IS NULL             -- Debe ser huérfana\n  AND n.id != $2                        -- No compararse consigo misma\n  AND n.estado = 'pendiente'            -- Solo buscar en la sala de espera\n  AND (\n      -- Criterio de Consenso Híbrido\n      (n.embedding <=> $1::vector) < 0.18 -- Opción A: Semántica muy fuerte\n      OR\n      ((n.embedding <=> $1::vector) < 0.30 AND (\n          SELECT COUNT(*) FROM (\n              SELECT unnest(n.tags) INTERSECT SELECT tag FROM input_tags\n          ) t\n      ) >= 2)                           -- Opción B: Semántica aceptable + 2 tags\n  )\nORDER BY n.created_at DESC \nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ [    $('Loop noticias').item.json.embedding,    $('Loop noticias').item.json.id,    $('Loop noticias').item.json.tags || []  ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1168,
+        384
+      ],
+      "id": "16ef08a6-26fd-4b4c-9bcb-1441c4baa71a",
+      "name": "¿Tengo un hermano?",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b271afe4-a896-41da-9ad9-6dd73ecf4c7f",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1376,
+        384
+      ],
+      "id": "1198a8ab-ba65-4f7c-b40f-3728dca801d0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- 1. Vinculamos la noticia a la historia encontrada\nUPDATE noticias \nSET historia_id = $1, \n    estado = 'clasificada' \nWHERE id = $2;\n\n-- 2. Refinamos el centro semántico sumando los vectores\n-- Eliminamos el \"/ 2\" para evitar el error de operador\nUPDATE historias \nSET vector_centro = (vector_centro + $3::vector)\nWHERE id = $1;",
+        "options": {
+          "queryReplacement": "={{ [ \n  $node[\"¿Hay un grupo para mi?\"].json[\"id\"], \n  $node[\"Loop noticias\"].json[\"id\"], \n  $node[\"Loop noticias\"].json[\"embedding\"], \n  $node[\"Loop noticias\"].json[\"tags\"] || [] \n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1168,
+        192
+      ],
+      "id": "c14be5c2-d907-4a19-ac4e-5da02699f889",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Busqueda de sin procesar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop noticias": {
+      "main": [
+        [],
+        [
+          {
+            "node": "¿Hay un grupo para mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If_validar mach": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Tengo un hermano?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busqueda de sin procesar": {
+      "main": [
+        [
+          {
+            "node": "Loop noticias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fundar Nueva Historia1": {
+      "main": [
+        [
+          {
+            "node": "Loop noticias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay un grupo para mi?": {
+      "main": [
+        [
+          {
+            "node": "If_validar mach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tengo un hermano?": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Fundar Nueva Historia1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop noticias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "02bb6706-18f3-4721-bf14-fda93c881480",
+  "meta": {
+    "instanceId": "51b580937e1306058770a877bba04ee7bd40b9b9aae074bd6bf3b078006b5216"
+  },
+  "id": "nYhgwVZNSPmsbgyf",
+  "tags": []
+}

@@ -1,0 +1,359 @@
+{
+  "name": "EditorNoticias_v_1.0.0",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -32
+      ],
+      "id": "2da30fc2-79f6-488d-bd80-54caec151189",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        -32
+      ],
+      "id": "17924299-3085-47d9-ac8b-17f55a1955f8",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  h.id AS historia_id,\n  h.titulo_generado,\n  h.resumen_ia AS resumen_anterior,\n  h.noticias_procesadas_count,\n  COUNT(*) AS total_noticias_actuales,\n  string_agg(n.resumen_ia, E'\\n---\\n') AS bloque_resumenes\nFROM public.historias h\nJOIN public.noticias n ON h.id = n.historia_id\nGROUP BY\n  h.id,\n  h.titulo_generado,\n  h.resumen_ia,\n  h.noticias_procesadas_count\nHAVING COUNT(*) > h.noticias_procesadas_count\n   OR h.resumen_ia IS NULL\nLIMIT 50\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -304,
+        -32
+      ],
+      "id": "c1ba4174-79e6-4826-965a-61794e243a7a",
+      "name": "Buscador de Historias sucias",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"model\": \"llama3.2:latest\",\n    \"prompt\": \"ACTÚA COMO: Editor Jefe de un diario digital chileno.\\n\\nTAREA: Redactar una actualización definitiva de la historia.\\n\\nTITULAR ACTUAL EN DB: \" + $json.titulo_generado + \"\\n\\nREPORTES ACUMULADOS:\\n\" + $json.bloque_resumenes + \"\\n\\nINSTRUCCIONES:\\n1. Crea un 'titulo_nuevo' que sintetice la situación actual. Si hay un vuelco (ej: de accidente a atentado, o de candidato a electo), el título DEBE cambiar.\\n2. Redacta el 'resumen_final' en 2 párrafos de estilo profesional.\\n3. Clasifica la 'categoria' e 'impacto_num' (1-5).\\n\\nFORMATO JSON:\\n{\\n  \\\"titulo_nuevo\\\": \\\"...\\\",\\n  \\\"resumen_final\\\": \\\"...\\\",\\n  \\\"categoria\\\": \\\"...\\\",\\n  \\\"impacto_num\\\": 3\\n}\",\n    \"stream\": false,\n    \"format\": \"json\"\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        112,
+        -32
+      ],
+      "id": "e46251de-0b04-419f-8189-83ca15814ae4",
+      "name": "LLamada Llama3.2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. OBTENCIÓN DE DATOS ORIGINALES DEL LOOP\nconst loopData = $node[\"Loop Over Items\"].json;\n\n// 2. LIMPIEZA DE LA RESPUESTA DE OLLAMA\nlet rawResponse = $json.response || \"{}\";\n\nif (typeof rawResponse === 'string') {\n    rawResponse = rawResponse.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n}\n\nlet ai;\ntry {\n    ai = (typeof rawResponse === 'object') ? rawResponse : JSON.parse(rawResponse);\n} catch (e) {\n    ai = { \n        resumen_final: \"Error en formato de IA\", \n        categoria: \"General\", \n        impacto_num: 1,\n        titulo_nuevo: loopData.titulo_generado \n    };\n}\n\n// 3. CÁLCULO DE PESO (Ranking Ground News)\nconst impacto = parseInt(ai.impacto_num) || 1;\nconst volumen = parseInt(loopData.total_noticias_actuales) || 1;\n\nconst fechaInicio = new Date(loopData.fecha_primer_reporte || new Date());\nconst horasAntiguedad = Math.max(0, (new Date() - fechaInicio) / (1000 * 60 * 60));\n\nlet score = impacto * 20;\nscore += Math.log10(volumen + 1) * 10;\nconst factorDecay = Math.max(0.1, 1 - (horasAntiguedad * 0.025));\n\nconst pesoFinal = (score * factorDecay).toFixed(2);\n\n// 4. SALIDA PARA POSTGRES (CON CORRECCIÓN DE TILDES)\nreturn {\n    id: loopData.historia_id || loopData.id,\n    // Asignamos el nuevo título buscando ambas variantes\n    titulo_nuevo: ai.titulo_nuevo || ai.titulo_actualizado || loopData.titulo_generado,\n    // Buscamos 'resumen_final' con y sin tilde para asegurar que se entregue\n    resumen: ai.resumen_final || ai.resumén_final || \"Sin resumen disponible\",\n    categoria: ai.categoria || \"General\",\n    impacto: impacto,\n    noticias_count: volumen,\n    peso_calculado: parseFloat(pesoFinal)\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -32
+      ],
+      "id": "86c77304-fd62-46cb-868d-8c403707bdda",
+      "name": "Limpieza"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "historias",
+          "mode": "list",
+          "cachedResultName": "historias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Loop Over Items').item.json.historia_id }}",
+            "noticias_procesadas_count": "={{ $json.noticias_count }}",
+            "peso_relevancia": "={{ $json.peso_calculado }}",
+            "impacto_score": "={{ $json.impacto }}",
+            "resumen_ia": "={{ $json.resumen }}",
+            "categoria_ia": "={{ $json.categoria }}",
+            "titulo_generado": "={{ $json.titulo_nuevo }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo_generado",
+              "displayName": "titulo_generado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_primer_reporte",
+              "displayName": "fecha_primer_reporte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "vector_centro",
+              "displayName": "vector_centro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fecha_primer_incidente",
+              "displayName": "fecha_primer_incidente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "noticias_procesadas_count",
+              "displayName": "noticias_procesadas_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "peso_relevancia",
+              "displayName": "peso_relevancia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "impacto_score",
+              "displayName": "impacto_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria_ia",
+              "displayName": "categoria_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ultima_actualización_peso",
+              "displayName": "ultima_actualización_peso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        528,
+        -32
+      ],
+      "id": "e2485001-21a9-4a2c-a095-404dd219e85b",
+      "name": "Actualizar Historias",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Buscador de Historias sucias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "LLamada Llama3.2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscador de Historias sucias": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLamada Llama3.2": {
+      "main": [
+        [
+          {
+            "node": "Limpieza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpieza": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Historias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Historias": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "f1be70fb-07a8-4041-9ab7-50cbc9e255f5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "51b580937e1306058770a877bba04ee7bd40b9b9aae074bd6bf3b078006b5216"
+  },
+  "id": "1EnQciih_Rri4UjeCY1P3",
+  "tags": []
+}

@@ -1,0 +1,1895 @@
+{
+  "name": "3 medios-fx",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        112
+      ],
+      "id": "e94f7459-6a1a-4aad-90de-1318b92457ce",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "post_title",
+              "cssSelector": "h3 > a",
+              "returnArray": true
+            },
+            {
+              "key": "link",
+              "cssSelector": "h3 > a",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "cleanUpText": true
+        }
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        160
+      ],
+      "id": "3bd1f982-c29a-4560-90b7-03e06c2e461f",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1408,
+        96
+      ],
+      "id": "2bad4798-05c4-4a55-b143-f631ec084126",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "BIOBIO",
+        "height": 80,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        -32
+      ],
+      "id": "65190603-ccf4-4f3f-b2ae-10edaff3224c",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "\nEMOL",
+        "height": 80,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        256
+      ],
+      "id": "08fe66cd-b46c-445d-ac30-01c4d2d60d00",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "post_title, post_URL",
+        "include": "=",
+        "options": {
+          "destinationFieldName": ""
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        304,
+        160
+      ],
+      "id": "6ee7b7ee-ff9f-4456-a9d5-11913c5ba798",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ba7d6ee-e85e-44c2-90fe-9405bc76f3dd",
+              "name": "post_URL",
+              "value": "={{ $json.link }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        384
+      ],
+      "id": "b3233991-a224-4043-bb7d-370b7969706f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "044359c0-7ffc-4987-bc3f-058b27429ade",
+              "name": "post_URL",
+              "value": "=https://www.emol.com{{ $json.post_URL }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        400
+      ],
+      "id": "d830f473-85dd-44ef-aff6-4b207cc04ae8",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.post_URL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        160
+      ],
+      "id": "b1a79504-a504-488b-a785-0bcff0f4db1f",
+      "name": "HTTP Request2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "titulo",
+              "cssSelector": "h1"
+            },
+            {
+              "key": "content",
+              "cssSelector": "#cuDetalle_cuTexto_textoNoticia"
+            },
+            {
+              "key": "imagen_url",
+              "cssSelector": "meta[property=\"og:image\"]",
+              "returnValue": "attribute",
+              "attribute": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        400
+      ],
+      "id": "21a9f4af-eec3-453e-ad08-fb66c05fa4f3",
+      "name": "HTML1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "864693c7-482f-484f-a36b-cfb604ad2bcc",
+              "name": "titulo",
+              "value": "={{ $json.titulo }}",
+              "type": "string"
+            },
+            {
+              "id": "4218da2e-7888-4ccb-b386-34c5413fba11",
+              "name": "link",
+              "value": "={{ $node[\"Edit Fields1\"].json.post_URL }}",
+              "type": "string"
+            },
+            {
+              "id": "271a7929-0a5d-46be-8402-2123d11db149",
+              "name": "content",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "634fcbdd-023c-49af-8c7b-59736ed254f4",
+              "name": "fuente",
+              "value": "Emol",
+              "type": "string"
+            },
+            {
+              "id": "5dcb0113-02f7-4086-8bce-8ba14fea1cd7",
+              "name": "imagen_url",
+              "value": "={{ $json.imagen_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        128
+      ],
+      "id": "8f7a2fd9-8ce4-422a-ab3c-0e334b04ca49",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c9954c5a-db68-45e3-ad0c-d19e024373ca",
+              "leftValue": "={{ $json.titulo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1008,
+        416
+      ],
+      "id": "44e49607-fbe1-4254-9818-f196103eb71f",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a8cdd383-dfb9-4217-b925-e33863848f52",
+              "name": "titulo",
+              "value": "={{ $json.post_title }}",
+              "type": "string"
+            },
+            {
+              "id": "e5a9d381-a564-4117-8e0a-9abe830e8569",
+              "name": "link",
+              "value": "={{ $json.post_URL }}",
+              "type": "string"
+            },
+            {
+              "id": "d9fda522-d387-465a-9ca4-9b89c2a3d0a1",
+              "name": "content",
+              "value": "={{ $json.post_content.replace(/<[^>]*>?/gm, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "f06cc908-91a4-4425-afeb-c985fad1cc9f",
+              "name": "fuente",
+              "value": "BioBio",
+              "type": "string"
+            },
+            {
+              "id": "23c028e1-16e7-4b9f-95a8-2bbd42126b41",
+              "name": "imagen_url",
+              "value": "=https://media.biobiochile.cl/wp-content/uploads/{{ $json.post_image.URL }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -192
+      ],
+      "id": "e182f3d7-bcae-4e25-9d2b-64bf8d963137",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "articles",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -192
+      ],
+      "id": "294939ec-6278-4d50-83e4-2fb5509e2ea5",
+      "name": "Split Out2"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2224,
+        128
+      ],
+      "id": "51c82b34-1334-4cc9-8248-8c9100863f6a",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3152,
+        -64
+      ],
+      "id": "280e8300-79d4-403f-a2ab-98f83af5f6d0",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "post_title, post_URL",
+        "include": "=",
+        "options": {
+          "destinationFieldName": ""
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        304,
+        752
+      ],
+      "id": "8d24a996-8573-4970-beca-e11e160d32e7",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ba7d6ee-e85e-44c2-90fe-9405bc76f3dd",
+              "name": "post_URL",
+              "value": "={{ $json.link }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        960
+      ],
+      "id": "6fea9a6c-0cab-4b60-ac8a-7bf9b28099a0",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "044359c0-7ffc-4987-bc3f-058b27429ade",
+              "name": "post_URL",
+              "value": "={{ $json.post_URL }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        976
+      ],
+      "id": "40e1cdcf-d7c6-47b9-ad40-98a761be96cb",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.post_URL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        752
+      ],
+      "id": "0482aa5e-2c9e-4c0b-aeb7-ef3612c4eb7d",
+      "name": "HTTP Request4",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "864693c7-482f-484f-a36b-cfb604ad2bcc",
+              "name": "titulo",
+              "value": "={{ $json.titulo }}",
+              "type": "string"
+            },
+            {
+              "id": "4218da2e-7888-4ccb-b386-34c5413fba11",
+              "name": "link",
+              "value": "={{ $node[\"Edit Fields5\"].json.post_URL }}",
+              "type": "string"
+            },
+            {
+              "id": "271a7929-0a5d-46be-8402-2123d11db149",
+              "name": "content",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "634fcbdd-023c-49af-8c7b-59736ed254f4",
+              "name": "fuente",
+              "value": "ElSiglo",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        752
+      ],
+      "id": "c9c60cca-e3b8-47e0-83f7-82c29277a288",
+      "name": "Edit Fields6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c9954c5a-db68-45e3-ad0c-d19e024373ca",
+              "leftValue": "={{ $json.titulo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1008,
+        976
+      ],
+      "id": "cdb12e4e-1d03-43db-972d-641c162ed713",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "content": "EL SIGLO",
+        "height": 80,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        720
+      ],
+      "id": "e2e11cb5-b8e4-4fe7-bcf9-ffa5db97153b",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "post_title",
+              "cssSelector": "h3 > a",
+              "returnArray": true
+            },
+            {
+              "key": "link",
+              "cssSelector": "h3 > a",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "cleanUpText": true
+        }
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        752
+      ],
+      "id": "0e0b3087-602d-4187-ad16-5a8e799f3bce",
+      "name": "Extraer elSiglo"
+    },
+    {
+      "parameters": {
+        "url": "https://www.biobiochile.cl/lista/categorias/nacional",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        208,
+        -192
+      ],
+      "id": "9ecdb734-7100-43d8-8c6d-29fd095db56b",
+      "name": "GET_BioBio"
+    },
+    {
+      "parameters": {
+        "url": "https://www.emol.com",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -80,
+        384
+      ],
+      "id": "dd89fd3b-0fb0-4c2b-b6d9-6728ca110974",
+      "name": "GET_Emol"
+    },
+    {
+      "parameters": {
+        "url": "https://elsiglo.cl/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -80,
+        960
+      ],
+      "id": "11cce701-ea54-4e62-8bc6-13f3a7a8f35d",
+      "name": "GET_ElSiglo"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "noticias",
+          "mode": "list",
+          "cachedResultName": "noticias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estado": "pendiente",
+            "titulo": "={{ $json.titulo }}",
+            "link": "={{ $json.link }}",
+            "content": "={{ $json.content }}",
+            "medio_id": "={{ $json.fuente.toString().toLowerCase().includes('biobio') ? 1 : \n   $json.fuente.toString().toLowerCase().includes('emol') ? 3 : \n   $json.fuente.toString().toLowerCase().includes('tercera') ? 4 : \n   $json.fuente.toString().toLowerCase().includes('mostrador') ? 5 : \n   $json.fuente.toString().toLowerCase().includes('cooperativa') ? 6 : \n   $json.fuente.toString().toLowerCase().includes('siglo') ? 13 : 1 }}",
+            "medio_nombre_backup": "={{ $json.fuente }}",
+            "imagen_url": "={{ $json.imagen_url }}"
+          },
+          "matchingColumns": [
+            "link"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "medio_nombre_backup",
+              "displayName": "medio_nombre_backup",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "medio_id",
+              "displayName": "medio_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "sesgo_ia",
+              "displayName": "sesgo_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "tono_ia",
+              "displayName": "tono_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "historia_id",
+              "displayName": "historia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "entidades_temp",
+              "displayName": "entidades_temp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "imagen_url",
+              "displayName": "imagen_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1824,
+        128
+      ],
+      "id": "e60624f7-33c8-45a6-abf0-5f4a1288137b",
+      "name": "DB_Upsert_Noticia_Cruda",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama3.2:latest"
+            },
+            {
+              "name": "prompt",
+              "value": "=ERES UN ANALISTA POLÍTICO EXPERTO EN EL CONTEXTO CHILENO Y UN EXPERTO EN SEO/INDEXACIÓN.\nTU OBJETIVO: Realizar un análisis de inteligencia y extracción de metadatos granulares para la plataforma Einsoft.\n\nREGLAS DE PROCESAMIENTO:\n1. Responde EXCLUSIVAMENTE con el objeto JSON crudo.\n2. \"titulo_neutro\": Estilo \"Agencia de Noticias\", sobrio, max 10 palabras.\n3. \"resumen_ia\": Identifica QUÉ, QUIÉN e IMPACTO en 3 líneas.\n4. \"categorias\": (Antes \"tags\") Clasifica en Agenda Nacional (Seguridad, Economía, Salud, etc.). Útil para filtros generales.\n5. \"conceptos_clave\": [CRÍTICO PARA ASOCIACIÓN] Extrae 5-8 términos exactos en minúsculas. Incluye: Cifras específicas (ej: \"0,1%\", \"40 horas\"), nombres de leyes (ej: \"ley naín-retamal\"), lugares específicos y temas técnicos.\n6. \"entidades\": Prioriza políticos chilenos, cargos y coaliciones.\n\nFORMATO JSON:\n{\n  \"titulo_neutro\": \"string\",\n  \"resumen_ia\": \"string\",\n  \"categorias\": [\"Economía\", \"Política\"], \n  \"conceptos_clave\": [\"tasa de interés\", \"banco central\", \"ipc\", \"0,1%\", \"inflación\"],\n  \"sesgo_ia\": \"Izquierda / Centro / Derecha / Neutro\",\n  \"tono_ia\": \"Crítico / Informativo / Institucional / Satírico\",\n  \"entidades\": [\n    {\n      \"nombre\": \"Nombre Apellido\",\n      \"tipo\": \"politico / institucion\",\n      \"sentimiento_entidad\": \"positivo / negativo / neutro\",\n      \"cita_textual\": \"string_o_null\"\n    }\n  ]\n}\n\nNOTICIA A ANALIZAR:\nTítulo Original: {{ $json.titulo }}\nContenido: {{ $json.content }}\nContexto temporal: {{ $now }}\n"
+            },
+            {
+              "name": "stream",
+              "value": "={{false}}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2528,
+        144
+      ],
+      "id": "abcebe96-ebd5-4b32-84d1-21429c49d74c",
+      "name": "AI_Analizador_Llama"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "bge-m3"
+            },
+            {
+              "name": "prompt",
+              "value": "=search_query: {{ $('JS_Formateador_IA').item.json.titulo_limpio }}. {{ $json.resumen_ia }}"
+            },
+            {
+              "name": "resumen_ia",
+              "value": "={{ $json.resumen_ia }}"
+            },
+            {
+              "name": "sesgo_ia",
+              "value": "={{ $json.sesgo_ia }}"
+            },
+            {
+              "name": "tono_ia",
+              "value": "={{ $json.tono_ia }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2992,
+        128
+      ],
+      "id": "29020968-9af3-42c3-929e-31917298f40f",
+      "name": "AI_Vectorizador_Nomic"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "noticias",
+          "mode": "list",
+          "cachedResultName": "noticias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('DB_Upsert_Noticia_Cruda').item.json.id }}",
+            "resumen_ia": "={{ $('JS_Formateador_IA').item.json.resumen_ia }}",
+            "tono_ia": "={{ $('JS_Formateador_IA').item.json.tono_ia }}",
+            "sesgo_ia": "={{ $('JS_Formateador_IA').item.json.sesgo_ia }}",
+            "entidades_temp": "={{ $json.entidades_json }}",
+            "embedding": "={{ $json.embedding }}",
+            "tags": "={{ $json.tags }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "medio_nombre_backup",
+              "displayName": "medio_nombre_backup",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "resumen_ia",
+              "displayName": "resumen_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "medio_id",
+              "displayName": "medio_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "sesgo_ia",
+              "displayName": "sesgo_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "tono_ia",
+              "displayName": "tono_ia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "historia_id",
+              "displayName": "historia_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "entidades_temp",
+              "displayName": "entidades_temp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "imagen_url",
+              "displayName": "imagen_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "candidatos_embedding",
+              "displayName": "candidatos_embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "historia_final_id",
+              "displayName": "historia_final_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "confianza_juez",
+              "displayName": "confianza_juez",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "estado_revision",
+              "displayName": "estado_revision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3360,
+        128
+      ],
+      "id": "ca5c4a12-76b2-4af1-9c7e-9ea5ac04db1f",
+      "name": "DB_Update_Data_IA",
+      "credentials": {
+        "postgres": {
+          "id": "VKCpDBdD0BwoB6d7",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const rawIA = $('AI_Analizador_Llama').item.json.response;\n// Si el ID viene del nodo anterior, úsalo. Si no, intenta sacarlo del item actual\nconst idOriginal = $('DB_Upsert_Noticia_Cruda').item.json.id || items[0].json.id; \n\nlet resultado = {};\n\ntry {\n  // Regex para capturar el JSON incluso si la IA habla antes o después\n  const jsonMatch = rawIA.match(/\\{[\\s\\S]*\\}/);\n  resultado = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n} catch (error) {\n  // Si falla, objeto vacío para que los defaults de abajo actúen\n  resultado = {};\n}\n\n// --- LÓGICA DE TAGS (Ya funcionando) ---\nconst rawCategorias = resultado.categorias || resultado.tags || [];\nconst rawConceptos = resultado.conceptos_clave || []; \nconst rawEntidades = (resultado.entidades || []).map(e => e.nombre);\n\nconst tagsCombinados = [\n    ...rawCategorias,\n    ...rawConceptos,\n    ...rawEntidades\n];\n\nconst tagsFinales = [...new Set(\n    tagsCombinados.map(t => t ? t.toString().toLowerCase().trim() : \"\")\n)].filter(t => t.length > 2); \n\n// --- LÓGICA DE BLINDAJE PARA SESGO Y TONO ---\n// Buscamos variaciones comunes o asignamos default\nconst sesgo = resultado.sesgo_ia || resultado.Sesgo_ia || resultado.sesgo || \"Indefinido\";\nconst tono = resultado.tono_ia || resultado.Tono_ia || resultado.tono || \"Informativo\";\n\nreturn {\n  json: {\n    id: idOriginal,\n    titulo_limpio: resultado.titulo_neutro || $('DB_Upsert_Noticia_Cruda').item.json.titulo,\n    \n    resumen_ia: resultado.resumen_ia || \"Sin resumen disponible.\",\n    \n    // AQUÍ ESTÁ EL ARREGLO: Usamos las variables con default\n    sesgo_ia: sesgo,\n    tono_ia: tono,\n    \n    tags: tagsFinales, \n    entidades_json: JSON.stringify(resultado.entidades || [])\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2784,
+        128
+      ],
+      "id": "136f461d-6ccb-4680-afbd-05b0874f6fe6",
+      "name": "JS_Formateador_IA"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cheerio = require('cheerio');\n\nconst results = [];\n\nfor (const item of items) {\n  // 1. Validamos que exista data\n  if (!item.json.data) continue;\n\n  const html = item.json.data;\n  const $ = cheerio.load(html);\n\n  // 2. FILTRO: Ignorar páginas que no son artículos\n  const esArticulo = $('h1.entry-title').length > 0;\n  \n  if (!esArticulo) {\n    continue; \n  }\n\n  // 3. LIMPIEZA\n  $('.heateor_sss_sharing_container').remove(); \n  $('.heateorSssClear').remove();\n  $('script').remove();\n  $('style').remove();\n  $('.sharedaddy').remove();\n\n  // 4. EXTRACCIÓN\n  const titulo = $('h1.entry-title').text().trim();\n  \n  const cuerpo = $('.entry-content p')\n    .map((i, el) => $(el).text().trim())\n    .get()\n    .join('\\n\\n');\n\n  const fecha = $('meta[property=\"article:published_time\"]').attr('content');\n  const autor = $('.by-author a').text().trim() || 'El Siglo';\n  const link = $('link[rel=\"canonical\"]').attr('href');\n\n  // 🔥 LÓGICA DE FOTOS MEJORADA (Basada en tu inspección)\n  let imagen = null;\n\n  // Prioridad 1: Buscar imágenes con la clase \"wp-image\" (son las fotos reales subidas)\n  // Buscamos dentro de .entry-content para asegurarnos que es parte de la noticia\n  const imgWp = $('.entry-content img[class*=\"wp-image-\"]').first().attr('src');\n  if (imgWp) {\n      imagen = imgWp;\n  }\n\n  // Prioridad 2: Si no encuentra wp-image, buscar cualquier imagen dentro del contenido\n  if (!imagen) {\n      const imgGenerica = $('.entry-content img').first().attr('src');\n      if (imgGenerica) imagen = imgGenerica;\n  }\n\n  // Prioridad 3: Imagen destacada (header)\n  if (!imagen) {\n      const imgHeader = $('.post-thumbnail img').attr('src');\n      if (imgHeader) imagen = imgHeader;\n  }\n\n  // Prioridad 4: Meta tag (Último recurso, aquí suele estar el logo si falla lo demás)\n  if (!imagen) {\n      imagen = $('meta[property=\"og:image\"]').attr('content');\n  }\n\n  // Solo agregamos si hay contenido real\n  if (cuerpo.length > 50) {\n    results.push({\n      json: {\n        titulo: titulo,\n        content: cuerpo,\n        fecha: fecha,\n        imagen_url: imagen, \n        autor: autor,\n        link: link \n      }\n    });\n  }\n}\n\nreturn results;\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        976
+      ],
+      "id": "518a8e35-fc61-4a06-b8de-7ea1e8f3e50f",
+      "name": "JS_Scraper_ElSiglo"
+    },
+    {
+      "parameters": {
+        "url": "https://www.cooperativa.cl/noticias/site/tax/port/all/rss____1.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -64,
+        1360
+      ],
+      "id": "194af5e7-3bba-413a-bcc8-b04007a794ff",
+      "name": "GET_Cooperativa"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        144,
+        1360
+      ],
+      "id": "d47f5ad7-a782-4949-ba90-2bb53bcdc238",
+      "name": "XML"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dccf6e6-2d4d-47e4-a3da-3eda0d4cfb00",
+              "name": "titulo",
+              "value": "={{ $json[\"rss.channel.item\"].title }}",
+              "type": "string"
+            },
+            {
+              "id": "a7f52514-f0c0-4031-9610-bb6600b5f3d4",
+              "name": "link",
+              "value": "={{ $json[\"rss.channel.item\"].link }}",
+              "type": "string"
+            },
+            {
+              "id": "c90eb6c5-a7c1-4c9d-98d0-8e590dfe3938",
+              "name": "imagen_url",
+              "value": "={{ \n  $json[\"rss.channel.item\"]?.[\"media:content\"]?.url\n  || $json[\"rss.channel.item\"]?.enclosure?.url\n  || $json[\"rss.channel.item\"]?.[\"media:content\"]?.[\"media:thumbnail\"]?.url\n  || ''\n}}",
+              "type": "string"
+            },
+            {
+              "id": "a9462a1f-5270-4a67-b05b-e37c71bb333c",
+              "name": "content",
+              "value": "={{ $json[\"rss.channel.item\"].description }}",
+              "type": "string"
+            },
+            {
+              "id": "bdd01177-d7bd-4da7-9b99-14a40120387c",
+              "name": "medio",
+              "value": "Cooperativa",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        1360
+      ],
+      "id": "77806d9a-20d6-44b3-8a31-6f8582f5110b",
+      "name": "Edit Fields7"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "rss.channel.item",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        352,
+        1360
+      ],
+      "id": "18d46c2d-633d-4ebb-b08a-1cdcbce26c7d",
+      "name": "Split Out3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "63362883-2b2a-4f5e-89bd-caf956f20877",
+              "leftValue": "={{ $json.content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        1360
+      ],
+      "id": "846a6816-bc6b-4ead-8ff7-f1750abc38bf",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Usamos map para procesar cada noticia de la lista\nreturn items.map(item => {\n  let rawContent = item.json.content || '';\n\n  // 1. Limpieza de etiquetas HTML\n  // Reemplaza <p>, <strong>, etc., por nada\n  let cleanText = rawContent.replace(/<[^>]*>?/gm, '');\n\n  // 2. Limpieza de caracteres de escape y espacios\n  // Eliminamos \\r\\n y normalizamos espacios múltiples\n  cleanText = cleanText\n    .replace(/\\r?\\n|\\r/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  // Devolvemos el objeto original pero con el content actualizado\n  return {\n    json: {\n      ...item.json,    // Mantiene titulo, link, imagen_url y medio\n      content: cleanText\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        1344
+      ],
+      "id": "aa34ba7e-6266-46d9-8334-46c869e4f724",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45158880-bf87-4ec8-959d-0a74b2f5cbce",
+              "name": "titulo",
+              "value": "={{ $json.titulo }}",
+              "type": "string"
+            },
+            {
+              "id": "5a6b0ef1-4724-44d0-ac17-b96b6b8ec7c5",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "43761bcc-a3d4-40b8-9cba-13ad36647db7",
+              "name": "imagen_url",
+              "value": "={{ $json.imagen_url }}",
+              "type": "string"
+            },
+            {
+              "id": "ee0dbb01-1c97-4b62-9ec1-768a998d89e1",
+              "name": "content",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "452dfecf-a970-4003-b4bf-0a3134968adc",
+              "name": "fuente",
+              "value": "={{ $json.medio }}",
+              "type": "string"
+            },
+            {
+              "id": "4532cfed-37de-4069-b990-01895ee68bf8",
+              "name": "medio_id",
+              "value": "6",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        1344
+      ],
+      "id": "99d701fa-7158-46fb-b8e5-e098df48127e",
+      "name": "Edit Fields8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abc8c419-7b6f-4158-b723-13cdaf93044b",
+              "name": "titulo",
+              "value": "={{ $json.titulo }}",
+              "type": "string"
+            },
+            {
+              "id": "68b3ceae-9acb-44ad-a6f1-ed8e8d6307af",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "80978c08-36d6-4f83-b11d-658d976cb63b",
+              "name": "content",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "9847acab-f10c-4e57-ac81-70f14fa8035a",
+              "name": "fuente",
+              "value": "={{ $json.fuente }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1168,
+        768
+      ],
+      "id": "567cb50d-1b84-438f-a8b6-a38a9b2364e5",
+      "name": "Edit Fields9"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // Aseguramos que content sea un string, si es null o undefined usamos string vacío\n  let rawContent = item.json.content || '';\n  \n  // Limpieza agresiva de HTML y espacios\n  let cleanText = rawContent\n    .replace(/<[^>]*>?/gm, ' ') // Quita etiquetas HTML\n    .replace(/&nbsp;/g, ' ')    // Quita espacios HTML\n    .replace(/&quot;/g, '\"')    // Arregla comillas\n    .replace(/\\r?\\n|\\r/g, ' ')  // Quita saltos de línea\n    .replace(/\\s+/g, ' ')       // Colapsa espacios múltiples\n    .trim();\n\n  // Si el contenido quedó vacío (ej: solo era una foto), usamos el título como backup\n  if (cleanText.length < 10) {\n      cleanText = item.json.titulo || '';\n  }\n\n  return {\n    json: {\n      ...item.json,\n      content: cleanText // Sobrescribimos con el texto limpio y seguro para JSON\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        128
+      ],
+      "id": "2823c90d-f5ca-4baf-890c-abb121498a04",
+      "name": "Limpiador Universal"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GET_BioBio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GET_Emol",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GET_ElSiglo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GET_Cooperativa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Limpiador Universal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Split Out2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI_Analizador_Llama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "DB_Update_Data_IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "JS_Scraper_ElSiglo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer elSiglo": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET_BioBio": {
+      "main": [
+        [
+          {
+            "node": "Split Out2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET_Emol": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET_ElSiglo": {
+      "main": [
+        [
+          {
+            "node": "Extraer elSiglo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB_Upsert_Noticia_Cruda": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI_Analizador_Llama": {
+      "main": [
+        [
+          {
+            "node": "JS_Formateador_IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI_Vectorizador_Nomic": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DB_Update_Data_IA": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS_Formateador_IA": {
+      "main": [
+        [
+          {
+            "node": "AI_Vectorizador_Nomic",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS_Scraper_ElSiglo": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET_Cooperativa": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Split Out3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields7": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields8": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Edit Fields9": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Limpiador Universal": {
+      "main": [
+        [
+          {
+            "node": "DB_Upsert_Noticia_Cruda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "7e6f48b1-1aa7-4269-873b-5819b6764e05",
+  "meta": {
+    "instanceId": "51b580937e1306058770a877bba04ee7bd40b9b9aae074bd6bf3b078006b5216"
+  },
+  "id": "Dtx6QBSzpQNNRX2VYJzHb",
+  "tags": []
+}
