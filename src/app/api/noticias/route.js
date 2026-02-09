@@ -1,37 +1,74 @@
+import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/server'; 
-import { noticiaSchema } from '@/lib/schemas'; // Asumiendo que ya creaste el archivo de esquemas
+import { z } from 'zod';
+
+// 1. Esquema de validación (El Portero)
+const noticiaSchema = z.object({
+  titulo: z.string().min(1, "El título es obligatorio"),
+  link: z.string().url("El link debe ser una URL válida"),
+  content: z.string().optional(),
+  fecha: z.string().optional().or(z.date()), // Acepta texto o fecha
+  fuente: z.string().optional(),
+  medio_id: z.number().optional()
+});
 
 export async function POST(request) {
   try {
-    // 1. Seguridad
+    // 2. Verificar la clave secreta (Seguridad)
     const authHeader = request.headers.get('x-api-secret');
     if (authHeader !== process.env.API_SECRET_KEY) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Recibir JSON directo (sin envoltorio "data" ni "tipo")
+    // 3. Leer y Validar los datos que llegan
     const body = await request.json();
+    const validation = noticiaSchema.safeParse(body);
 
-    // 3. Validar solo con esquema de Noticia
-    const datosValidados = noticiaSchema.parse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
+    }
 
-    // 4. Guardar
+    const { titulo, link, content, fecha, fuente, medio_id } = validation.data;
+
+    // 4. Conectar a Supabase
     const supabase = await createClient();
+
+    // 5. Preparar la fecha (Si no viene, usamos la actual)
+    const fechaFinal = fecha ? new Date(fecha).toISOString() : new Date().toISOString();
+
+    // 6. GUARDAR EN BASE DE DATOS (La parte clave: UPSERT)
+    // .upsert() intenta insertar, pero si choca con un link existente, actualiza.
     const { data, error } = await supabase
       .from('noticias')
-      .insert([datosValidados]) // Pasamos el objeto directo
-      .select();
+      .upsert(
+        {
+          titulo,
+          link,          // Esta es la llave única
+          content: content || '',
+          fecha: fechaFinal,
+          fuente: fuente || 'Desconocido',
+          medio_id: medio_id || null, // Opcional
+          estado: 'pendiente'         // Estado por defecto
+        },
+        { onConflict: 'link' } // <--- ESTO EVITA EL ERROR DE DUPLICADOS
+      )
+      .select()
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('❌ Error Supabase:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
-    return NextResponse.json({ success: true, id: data[0].id });
+    // 7. Responder Éxito
+    return NextResponse.json({
+      success: true,
+      id: data.id,
+      mensaje: 'Noticia procesada correctamente'
+    });
 
   } catch (error) {
-    // Manejo de error limpio
-    const status = error.issues ? 400 : 500;
-    return NextResponse.json({ 
-      error: error.issues || error.message 
-    }, { status });
+    console.error('❌ Error General:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
