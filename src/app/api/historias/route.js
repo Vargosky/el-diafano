@@ -22,7 +22,7 @@ export async function POST(request) {
 
     const datosValidados = historiaSchema.parse(body);
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('historias')
       .upsert(datosValidados, { onConflict: 'id' }) // Upsert por si actualizas

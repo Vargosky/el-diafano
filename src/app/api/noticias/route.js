@@ -17,7 +17,7 @@ export async function POST(request) {
     const datosValidados = noticiaSchema.parse(body);
 
     // 4. Guardar
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('noticias')
       .insert([datosValidados]) // Pasamos el objeto directo

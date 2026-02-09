@@ -18,7 +18,7 @@ export async function POST(request) {
     const datosValidados = medioSchema.parse(body);
 
     // 4. Guardar en Supabase
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Usamos UPSERT: Si ya existe un medio con ese ID (o slug si lo configuras como unique), 
     // lo actualiza en vez de crear uno nuevo.
