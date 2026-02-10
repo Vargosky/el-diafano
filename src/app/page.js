@@ -23,21 +23,22 @@ const normalizeTags = (tags) => {
 async function getStories() {
   try {
     const query = `
-      SELECT 
-        h.id, 
-        h.titulo_generado, 
-        h.fecha, 
-        h.tags, 
-        h.resumen_ia, 
-        h.categoria_ia, 
-        COALESCE(h.peso_relevancia, 0) as peso,
-        (SELECT COUNT(*) FROM noticias n WHERE n.historia_id = h.id) as total_noticias,
-        (SELECT COUNT(DISTINCT medio_id) FROM noticias n WHERE n.historia_id = h.id) as total_medios
-      FROM historias h
-      WHERE h.estado = 'activo'
-      ORDER BY h.fecha DESC, h.peso_relevancia DESC
-      LIMIT 20
-    `;
+    SELECT 
+      h.id, 
+      h.titulo_generado, 
+      h.fecha, 
+      h.tags, 
+      h.resumen_ia, 
+      h.categoria_ia, 
+      COALESCE(h.peso_relevancia, 0) as peso,
+      (SELECT COUNT(*) FROM noticias n WHERE n.historia_id = h.id) as total_noticias,
+      (SELECT COUNT(DISTINCT medio_id) FROM noticias n WHERE n.historia_id = h.id) as total_medios
+    FROM historias h
+    WHERE h.estado = 'activo'
+      AND h.fecha > NOW() - INTERVAL '7 days'
+    ORDER BY h.peso_relevancia DESC, h.fecha DESC
+    LIMIT 20
+  `;
 
     const res = await pool.query(query);
 
