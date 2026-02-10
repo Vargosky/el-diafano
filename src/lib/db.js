@@ -1,27 +1,24 @@
+// /lib/db.js - CONFIGURACIÓN PARA SUPABASE
+
 import { Pool } from 'pg';
+import { fa } from 'zod/locales';
 
-const poolConfig = {
+// Configuración del pool de conexiones a Supabase
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // IMPORTANTE: En local (Docker), SSL suele dar error.
-  // Lo comentamos para que entre directo.
-  /* ssl: {
-    rejectUnauthorized: false
-  }
-  */
-};
+  ssl: false, // Cambia a true si tu base de datos requiere SSL
+  max: 20, // Máximo de conexiones simultáneas
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
 
-// Implementación Singleton para evitar saturar conexiones en desarrollo
-export const pool = global.postgresPool || new Pool(poolConfig);
+// Event listeners para debugging (opcional, puedes comentarlos en producción)
+pool.on('connect', () => {
+  console.log('[DB] ✅ Nueva conexión establecida con Supabase');
+});
 
-if (process.env.NODE_ENV !== 'production') {
-  global.postgresPool = pool;
-}
-
-export const sql = async (strings, ...values) => {
-  const query = strings.reduce((acc, str, i) => 
-    acc + str + (values[i] !== undefined ? `$${i + 1}` : ""), "");
-  
-  return await pool.query(query, values);
-};
+pool.on('error', (err) => {
+  console.error('[DB] ❌ Error inesperado en el pool:', err);
+});
 
 export default pool;

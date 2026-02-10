@@ -1,6 +1,24 @@
-import pool from '@/lib/db';
-import React from 'react';
-import Link from 'next/link';
+import pool from "@/lib/db";
+import React from "react";
+import Link from "next/link";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Normaliza tags en caso de que Postgres devuelva array o string tipo "{POLITICA,ECONOMIA}"
+const normalizeTags = (tags) => {
+  if (Array.isArray(tags)) return tags;
+
+  if (typeof tags === "string") {
+    return tags
+      .replace(/[{}"]/g, "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
 
 async function getStories() {
   try {
@@ -20,27 +38,43 @@ async function getStories() {
       ORDER BY h.fecha DESC, h.peso_relevancia DESC
       LIMIT 20
     `;
-    
-    const { rows } = await pool.query(query);
+
+    const res = await pool.query(query);
+
+    // Soporta distintos wrappers
+    const rows =
+      Array.isArray(res) ? res :
+      Array.isArray(res?.rows) ? res.rows :
+      Array.isArray(res?.data) ? res.data :
+      Array.isArray(res?.result?.rows) ? res.result.rows :
+      [];
+
     return rows;
   } catch (error) {
-    console.error("Error al obtener historias de Supabase:", error);
+    console.error("Error al obtener historias:", error);
     return [];
   }
 }
 
 export default async function ElDiafanoPage() {
-  const stories = await getStories();
-  const fechaActual = new Date().toLocaleDateString('es-CL', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const storiesRaw = await getStories();
+  const stories = Array.isArray(storiesRaw) ? storiesRaw : [];
+
+  const fechaActual = new Date().toLocaleDateString("es-CL", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
-  // Si no hay historias categorizadas como Economía, tomamos un bloque de noticias generales
-  const economiaStories = stories.filter(s => s.categoria_ia === 'Economía').slice(0, 3);
-  const lateralIzquierdo = economiaStories.length > 0 ? economiaStories : stories.slice(10, 13);
+  // Bloques laterales
+  const economiaStories = stories
+    .filter((s) => s.categoria_ia === "Economía")
+    .slice(0, 3);
+
+  const lateralIzquierdo =
+    economiaStories.length > 0 ? economiaStories : stories.slice(10, 13);
+
   const lateralDerecho = stories.slice(5, 10);
 
   return (
@@ -54,29 +88,38 @@ export default async function ElDiafanoPage() {
           </span>
           <span>Versión Alpha 1.0</span>
         </div>
-        
+
         <h1 className="text-6xl md:text-8xl font-black mb-2 tracking-tighter text-center">
           EL <span className="text-blue-600">DIÁFANO</span>
         </h1>
-        <p className="italic text-xl text-gray-600 mb-4">Crónica de Consensos</p>
+
+        <p className="italic text-xl text-gray-600 mb-4">
+          Crónica de Consensos
+        </p>
+
         <div className="flex justify-center border-t border-gray-300 pt-2 text-sm font-sans uppercase">
           <span>Valparaíso, Chile • {fechaActual}</span>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
-        
-        {/* Columna Lateral Izquierda - Se llena con datos si existen */}
+        {/* Columna Lateral Izquierda */}
         <aside className="md:col-span-3 border-r border-gray-300 pr-4 hidden md:block">
-          <h2 className="bg-[#1a1a1a] text-white text-center py-1 text-xs font-bold uppercase mb-4">Destacados</h2>
-          {lateralIzquierdo.map(story => (
+          <h2 className="bg-[#1a1a1a] text-white text-center py-1 text-xs font-bold uppercase mb-4">
+            Destacados
+          </h2>
+
+          {lateralIzquierdo.map((story) => (
             <div key={story.id} className="mb-6 border-b border-gray-200 pb-4">
               <Link href={`/historia/${story.id}`}>
                 <h3 className="font-bold text-md leading-tight hover:text-blue-700 transition-colors cursor-pointer">
                   {story.titulo_generado}
                 </h3>
               </Link>
-              <p className="text-xs text-gray-500 mt-1 uppercase font-sans">{story.total_medios} medios</p>
+
+              <p className="text-xs text-gray-500 mt-1 uppercase font-sans">
+                {story.total_medios} medios
+              </p>
             </div>
           ))}
         </aside>
@@ -84,54 +127,76 @@ export default async function ElDiafanoPage() {
         {/* Feed Central */}
         <section className="md:col-span-6">
           {stories.length > 0 ? (
-            stories.slice(0, 5).map((story) => (
-              <article key={story.id} className="mb-12 border-b border-gray-200 pb-8 last:border-0">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex gap-2">
-                    {story.tags && story.tags.slice(0, 3).map((tag, i) => (
-                      <span key={i} className="bg-gray-200 text-[10px] font-sans font-bold uppercase px-2 py-1 rounded">
-                        {tag}
-                      </span>
-                    ))}
+            stories.slice(0, 5).map((story) => {
+              const tags = normalizeTags(story.tags);
+
+              return (
+                <article
+                  key={story.id}
+                  className="mb-12 border-b border-gray-200 pb-8 last:border-0"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {tags.slice(0, 3).map((tag, i) => (
+                        <span
+                          key={i}
+                          className="bg-gray-200 text-[10px] font-sans font-bold uppercase px-2 py-1 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <span className="text-blue-600 font-sans text-[10px] font-bold border border-blue-600 px-2 py-1 rounded whitespace-nowrap">
+                      {story.total_noticias} ARTÍCULOS | {story.total_medios} MEDIOS
+                    </span>
                   </div>
-                  <span className="text-blue-600 font-sans text-[10px] font-bold border border-blue-600 px-2 py-1 rounded">
-                    {story.total_noticias} ARTÍCULOS | {story.total_medios} MEDIOS
-                  </span>
-                </div>
 
-                <Link href={`/historia/${story.id}`}>
-                  <h2 className="text-2xl md:text-3xl font-bold leading-tight mb-4 hover:text-blue-800 transition-colors cursor-pointer">
-                    {story.titulo_generado}
-                  </h2>
-                </Link>
-                
-                <p className="text-gray-700 leading-relaxed text-md mb-4 line-clamp-3">
-                  {story.resumen_ia}
-                </p>
+                  <Link href={`/historia/${story.id}`}>
+                    <h2 className="text-2xl md:text-3xl font-bold leading-tight mb-4 hover:text-blue-800 transition-colors cursor-pointer">
+                      {story.titulo_generado}
+                    </h2>
+                  </Link>
 
-                <div className="flex justify-end text-[10px] font-sans text-gray-400 font-bold uppercase">
-                  {new Date(story.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </article>
-            ))
+                  <p className="text-gray-700 leading-relaxed text-md mb-4 line-clamp-3">
+                    {story.resumen_ia || "Sin resumen disponible."}
+                  </p>
+
+                  <div className="flex justify-end text-[10px] font-sans text-gray-400 font-bold uppercase">
+                    {story.fecha
+                      ? new Date(story.fecha).toLocaleTimeString("es-CL", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </div>
+                </article>
+              );
+            })
           ) : (
             <div className="text-center py-20 opacity-50 italic">
-              Conectando con Supabase...
+              Conectando con la base de datos...
             </div>
           )}
         </section>
 
         {/* Columna Lateral Derecha */}
         <aside className="md:col-span-3 border-l border-gray-300 pl-4">
-          <h2 className="bg-blue-600 text-white text-center py-1 text-xs font-bold uppercase mb-4">Política & Sociedad</h2>
-          {lateralDerecho.map(story => (
+          <h2 className="bg-blue-600 text-white text-center py-1 text-xs font-bold uppercase mb-4">
+            Política & Sociedad
+          </h2>
+
+          {lateralDerecho.map((story) => (
             <div key={story.id} className="mb-6 border-b border-gray-100 pb-4">
               <Link href={`/historia/${story.id}`}>
                 <h3 className="font-bold text-sm leading-snug hover:text-blue-700 transition-colors cursor-pointer">
                   {story.titulo_generado}
                 </h3>
               </Link>
-              <p className="text-[10px] text-gray-400 mt-2 font-sans line-clamp-2">{story.resumen_ia}</p>
+
+              <p className="text-[10px] text-gray-400 mt-2 font-sans line-clamp-2">
+                {story.resumen_ia || "Sin resumen disponible."}
+              </p>
             </div>
           ))}
         </aside>

@@ -1,0 +1,28 @@
+DB_USER=n8n_user
+DB_PASSWORD=mi_password_segura_123
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=ground_news_db
+
+
+# Tu antigua configuración local (puedes guardarla como respaldo)
+# DB_USER=n8n_user ...
+
+# Tu nueva configuración de PRODUCCIÓN
+# 1. CONEXIÓN SUPABASE
+NEXT_PUBLIC_SUPABASE_URL="https://tqnwbugtjelwpoltyvvf.supabase.co"
+
+# ¡ESTA ES LA QUE FALTA! (Sigue las instrucciones abajo para obtenerla)
+NEXT_PUBLIC_SUPABASE_URL="https://tqnwbugtjelwpoltyvvf.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxbndidWd0amVsd3BvbHR5dnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MzUyMzcsImV4cCI6MjA4NjExMTIzN30.131VKGAm1gOL67FN-JZ1UIMdpSZXTWLt1rmcwjsXtdM"
+
+# 2. SEGURIDAD API (Nuestro "Portero")
+API_SECRET_KEY="diafano_super_secreto_2026_vargas"
+
+# 3. CONEXIÓN BASE DE DATOS
+# Esta es la contraseña que mostraste antes. 
+# SI LA CAMBIASTE (como te sugerí), pon la nueva aquí. Si no, usa esta:
+# DATABASE_URL="postgresql://postgres:Bw4ITk2yFQuQ7xvy@db.tqnwbugtjelwpoltyvvf.supabase.co:5432/postgres"
+
+# Conexión directa a PostgreSQL en Docker
+DATABASE_URL="postgresql://n8n_user:mi_password_segura_123@localhost:5432/ground_news_db"
