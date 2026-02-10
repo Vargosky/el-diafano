@@ -1,5 +1,5 @@
 // ÚNICA IMPORTACIÓN DE POOL - NO AGREGAR MÁS ABAJO
-import { pool } from './db';
+import  pool  from './db';
 
 /**
  * 1. HUB DE HISTORIAS (NUEVO)

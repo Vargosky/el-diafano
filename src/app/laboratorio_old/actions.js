@@ -2,7 +2,7 @@
 
 // Importamos la conexión centralizada desde tu carpeta lib
 // El alias '@' apunta a la carpeta 'src' automáticamente en Next.js
-import { pool } from '@/lib/db'; 
+import  pool  from '@/lib/db'; 
 
 export async function getLaboratorioData() {
   // Usamos el pool que ya está configurado en db.js
