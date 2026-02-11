@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import FeedController from '@/components/FeedController';
 import SidebarSection from '@/components/SidebarSection';
+import LiveFeedIndicator from '@/components/LiveFeedIndicator';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -42,8 +43,28 @@ async function getStories() {
   }
 }
 
+// Nueva función para obtener la última actualización
+async function getLastUpdate() {
+  try {
+    const { data, error } = await supabase
+      .from('historias')
+      .select('fecha')
+      .eq('estado', 'activo')
+      .order('fecha', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) throw error;
+    return data?.fecha || new Date().toISOString();
+  } catch (error) {
+    console.error('Error al obtener última actualización:', error);
+    return new Date().toISOString();
+  }
+}
+
 export default async function ElDiafanoPage() {
   const stories = await getStories();
+  const lastUpdate = await getLastUpdate();
 
   const fechaActual = new Date().toLocaleDateString("es-CL", {
     weekday: "long",
@@ -74,10 +95,7 @@ export default async function ElDiafanoPage() {
       {/* Header Estilo Periódico */}
       <header className="max-w-7xl mx-auto text-center border-b-4 border-[#1a1a1a] mb-8 pb-6 px-4 md:px-8 pt-8">
         <div className="flex justify-between items-center mb-4 text-xs font-sans font-bold uppercase tracking-widest">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            LIVE FEED • EINSOFT INTELLIGENCE
-          </span>
+          <LiveFeedIndicator lastUpdate={lastUpdate} />
           <span>Versión Alpha 1.0</span>
         </div>
 
