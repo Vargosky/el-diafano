@@ -1,65 +1,49 @@
-import pool from "@/lib/db";
-import React from "react";
-import Link from "next/link";
+// src/app/page.js
+import { createClient } from '@supabase/supabase-js';
+import FeedController from '@/components/FeedController';
+import SidebarSection from '@/components/SidebarSection';
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-// Normaliza tags en caso de que Postgres devuelva array o string tipo "{POLITICA,ECONOMIA}"
-const normalizeTags = (tags) => {
-  if (Array.isArray(tags)) return tags;
-
-  if (typeof tags === "string") {
-    return tags
-      .replace(/[{}"]/g, "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-};
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 async function getStories() {
   try {
-    const query = `
-    SELECT 
-      h.id, 
-      h.titulo_generado, 
-      h.fecha, 
-      h.tags, 
-      h.resumen_ia, 
-      h.categoria_ia, 
-      COALESCE(h.peso_relevancia, 0) as peso,
-      (SELECT COUNT(*) FROM noticias n WHERE n.historia_id = h.id) as total_noticias,
-      (SELECT COUNT(DISTINCT medio_id) FROM noticias n WHERE n.historia_id = h.id) as total_medios
-    FROM historias h
-    WHERE h.estado = 'activo'
-      AND h.fecha > NOW() - INTERVAL '7 days'
-    ORDER BY h.peso_relevancia DESC, h.fecha DESC
-    LIMIT 20
-  `;
+    const { data, error } = await supabase
+      .from('historias')
+      .select(`
+        id,
+        titulo_generado,
+        fecha,
+        tags,
+        resumen_ia,
+        categoria_ia,
+        peso_relevancia,
+        noticias(id, medio_id)
+      `)
+      .eq('estado', 'activo')
+      .gte('fecha', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .limit(100);
 
-    const res = await pool.query(query);
+    if (error) throw error;
 
-    // Soporta distintos wrappers
-    const rows =
-      Array.isArray(res) ? res :
-      Array.isArray(res?.rows) ? res.rows :
-      Array.isArray(res?.data) ? res.data :
-      Array.isArray(res?.result?.rows) ? res.result.rows :
-      [];
+    const stories = data?.map(story => ({
+      ...story,
+      peso: story.peso_relevancia || 0,
+      total_noticias: story.noticias?.length || 0,
+      total_medios: story.noticias ? new Set(story.noticias.map(n => n.medio_id)).size : 0,
+    })) || [];
 
-    return rows;
+    return stories;
   } catch (error) {
-    console.error("Error al obtener historias:", error);
+    console.error('Error al obtener historias:', error);
     return [];
   }
 }
 
 export default async function ElDiafanoPage() {
-  const storiesRaw = await getStories();
-  const stories = Array.isArray(storiesRaw) ? storiesRaw : [];
+  const stories = await getStories();
 
   const fechaActual = new Date().toLocaleDateString("es-CL", {
     weekday: "long",
@@ -68,20 +52,27 @@ export default async function ElDiafanoPage() {
     day: "numeric",
   });
 
-  // Bloques laterales
+  // Separar historias por categoría para las columnas laterales
   const economiaStories = stories
     .filter((s) => s.categoria_ia === "Economía")
-    .slice(0, 3);
+    .slice(0, 5);
 
-  const lateralIzquierdo =
-    economiaStories.length > 0 ? economiaStories : stories.slice(10, 13);
+  const politicaStories = stories
+    .filter((s) => s.categoria_ia === "Política" || s.tags?.includes?.("política") || s.tags?.includes?.("POLITICA"))
+    .slice(0, 5);
 
-  const lateralDerecho = stories.slice(5, 10);
+  const internacionalStories = stories
+    .filter((s) => s.categoria_ia === "Internacional")
+    .slice(0, 4);
+
+  const sociedadStories = stories
+    .filter((s) => s.categoria_ia === "Sociedad")
+    .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#f5f2ed] text-[#1a1a1a] font-serif p-4 md:p-8">
+    <div className="min-h-screen bg-[#f5f2ed] text-[#1a1a1a] font-serif">
       {/* Header Estilo Periódico */}
-      <header className="max-w-6xl mx-auto text-center border-b-4 border-[#1a1a1a] mb-12 pb-6">
+      <header className="max-w-7xl mx-auto text-center border-b-4 border-[#1a1a1a] mb-8 pb-6 px-4 md:px-8 pt-8">
         <div className="flex justify-between items-center mb-4 text-xs font-sans font-bold uppercase tracking-widest">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -103,105 +94,48 @@ export default async function ElDiafanoPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8">
-        {/* Columna Lateral Izquierda */}
-        <aside className="md:col-span-3 border-r border-gray-300 pr-4 hidden md:block">
-          <h2 className="bg-[#1a1a1a] text-white text-center py-1 text-xs font-bold uppercase mb-4">
-            Destacados
-          </h2>
-
-          {lateralIzquierdo.map((story) => (
-            <div key={story.id} className="mb-6 border-b border-gray-200 pb-4">
-              <Link href={`/historia/${story.id}`}>
-                <h3 className="font-bold text-md leading-tight hover:text-blue-700 transition-colors cursor-pointer">
-                  {story.titulo_generado}
-                </h3>
-              </Link>
-
-              <p className="text-xs text-gray-500 mt-1 uppercase font-sans">
-                {story.total_medios} medios
-              </p>
-            </div>
-          ))}
+      {/* Layout 3 Columnas */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-8">
+        
+        {/* Columna Lateral Izquierda - Economía */}
+        <aside className="md:col-span-3 space-y-6 hidden md:block">
+          <SidebarSection 
+            title="Economía" 
+            color="bg-green-700"
+            stories={economiaStories}
+          />
+          
+          <SidebarSection 
+            title="Internacional" 
+            color="bg-purple-700"
+            stories={internacionalStories}
+          />
         </aside>
 
-        {/* Feed Central */}
+        {/* Feed Central con Tabs */}
         <section className="md:col-span-6">
-          {stories.length > 0 ? (
-            stories.slice(0, 5).map((story) => {
-              const tags = normalizeTags(story.tags);
-
-              return (
-                <article
-                  key={story.id}
-                  className="mb-12 border-b border-gray-200 pb-8 last:border-0"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex gap-2 flex-wrap">
-                      {tags.slice(0, 3).map((tag, i) => (
-                        <span
-                          key={i}
-                          className="bg-gray-200 text-[10px] font-sans font-bold uppercase px-2 py-1 rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <span className="text-blue-600 font-sans text-[10px] font-bold border border-blue-600 px-2 py-1 rounded whitespace-nowrap">
-                      {story.total_noticias} ARTÍCULOS | {story.total_medios} MEDIOS
-                    </span>
-                  </div>
-
-                  <Link href={`/historia/${story.id}`}>
-                    <h2 className="text-2xl md:text-3xl font-bold leading-tight mb-4 hover:text-blue-800 transition-colors cursor-pointer">
-                      {story.titulo_generado}
-                    </h2>
-                  </Link>
-
-                  <p className="text-gray-700 leading-relaxed text-md mb-4 line-clamp-3">
-                    {story.resumen_ia || "Sin resumen disponible."}
-                  </p>
-
-                  <div className="flex justify-end text-[10px] font-sans text-gray-400 font-bold uppercase">
-                    {story.fecha
-                      ? new Date(story.fecha).toLocaleTimeString("es-CL", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : ""}
-                  </div>
-                </article>
-              );
-            })
-          ) : (
-            <div className="text-center py-20 opacity-50 italic">
-              Conectando con la base de datos...
-            </div>
-          )}
+          <FeedController stories={stories} />
         </section>
 
-        {/* Columna Lateral Derecha */}
-        <aside className="md:col-span-3 border-l border-gray-300 pl-4">
-          <h2 className="bg-blue-600 text-white text-center py-1 text-xs font-bold uppercase mb-4">
-            Política & Sociedad
-          </h2>
-
-          {lateralDerecho.map((story) => (
-            <div key={story.id} className="mb-6 border-b border-gray-100 pb-4">
-              <Link href={`/historia/${story.id}`}>
-                <h3 className="font-bold text-sm leading-snug hover:text-blue-700 transition-colors cursor-pointer">
-                  {story.titulo_generado}
-                </h3>
-              </Link>
-
-              <p className="text-[10px] text-gray-400 mt-2 font-sans line-clamp-2">
-                {story.resumen_ia || "Sin resumen disponible."}
-              </p>
-            </div>
-          ))}
+        {/* Columna Lateral Derecha - Política & Sociedad */}
+        <aside className="md:col-span-3 space-y-6">
+          <SidebarSection 
+            title="Política" 
+            color="bg-blue-700"
+            stories={politicaStories}
+          />
+          
+          <SidebarSection 
+            title="Sociedad" 
+            color="bg-orange-700"
+            stories={sociedadStories}
+          />
         </aside>
       </main>
+
+      <footer className="py-12 text-center text-xs text-gray-400 uppercase tracking-widest font-sans mt-16">
+        Einsoft Intelligence Unit • 2026
+      </footer>
     </div>
   );
 }
