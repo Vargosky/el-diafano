@@ -106,9 +106,9 @@ export default async function StoryPage({ params }) {
                   <span className="text-[10px] font-black uppercase text-blue-600 px-2 py-1 bg-blue-50 rounded">
                     {/* Mapeo de medios según tu base de datos */}
                     {source.medio_id === 1 ? 'BioBio Chile' : 
-                     source.medio_id === 2 ? 'Emol' : 
-                     source.medio_id === 6 ? 'Cooperativa' : 
-                     source.medio_id === 3 ? 'El Siglo' : 'Medio Nacional'}
+                     source.medio_id === 3 ? 'Emol' : 
+                     source.medio_id === 40 ? 'Cooperativa' : 
+                     source.medio_id === 6 ? 'El Siglo' : 'Medio Nacional'}
                   </span>
                   <span className="text-[10px] text-gray-400 font-mono">
                     {new Date(source.created_at).toLocaleDateString('es-CL', {

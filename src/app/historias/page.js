@@ -1,26 +1,41 @@
-import { Pool } from 'pg';
+import { createClient } from '@supabase/supabase-js';
 import StoryCard from '@/components/StoryCard';
 
-const pool = new Pool({
-  user: 'n8n_user',
-  host: 'localhost',
-  database: 'ground_news_db',
-  password: 'mi_password_segura_123',
-  port: 5432,
-});
+// Crea el cliente de Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 async function fetchStories() {
   try {
-    const res = await pool.query(`
-      SELECT h.id, h.titulo_generado, h.fecha_primer_reporte as fecha, h.tags, h.resumen_ia,
-      COUNT(n.id) as total_noticias
-      FROM historias h
-      LEFT JOIN noticias n ON n.historia_id = h.id
-      GROUP BY h.id, h.titulo_generado, h.fecha_primer_reporte, h.tags, h.resumen_ia
-      ORDER BY h.fecha_primer_reporte DESC LIMIT 20;
-    `);
-    return res.rows;
-  } catch (e) { return []; }
+    const { data, error } = await supabase
+      .from('historias')
+      .select(`
+        id,
+        titulo_generado,
+        fecha_primer_reporte,
+        tags,
+        resumen_ia,
+        noticias(id)
+      `)
+      .order('fecha_primer_reporte', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    // Transformar los datos para incluir total_noticias
+    const stories = data?.map(story => ({
+      ...story,
+      fecha: story.fecha_primer_reporte,
+      total_noticias: story.noticias?.length || 0,
+    })) || [];
+
+    return stories;
+  } catch (e) {
+    console.error('Error fetching stories:', e);
+    return [];
+  }
 }
 
 export default async function Page() {
