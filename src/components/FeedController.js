@@ -1,164 +1,149 @@
-// src/components/FeedController.js
+// src/components/FeedController.jsx
+
 'use client';
 
-import { useState, useMemo } from 'react';
-import StoryCardDiafano from '@/components/StoryCardDiafano';
+import { useState } from 'react';
+import Link from 'next/link';
+import BiasBar from './BiasBar';
 
-// Sistema de scoring inteligente
-function calcularScore(historia) {
-  const ahora = new Date();
-  const fechaNoticia = new Date(historia.fecha);
-  const horasDesdePublicacion = (ahora - fechaNoticia) / (1000 * 60 * 60);
-  
-  // 1. PESO POR CANTIDAD DE MEDIOS (factor más importante)
-  const pesoMedios = historia.total_noticias * 15;
-  
-  // 2. FRESCURA TEMPORAL (decaimiento exponencial)
-  const pesoFrescura = Math.max(0, 100 * Math.exp(-horasDesdePublicacion / 12));
-  
-  // 3. PESO POR CATEGORÍA/TAGS
-  const pesoCategoria = getPesoPorCategoria(historia.tags);
-  
-  // 4. BOOST SI ES MUY RECIENTE (menos de 2 horas)
-  const boostBreaking = horasDesdePublicacion < 2 ? 30 : 0;
-  
-  return pesoMedios + pesoFrescura + pesoCategoria + boostBreaking;
-}
-
-// Asignar pesos según categoría
-function getPesoPorCategoria(tags) {
-  if (!tags) return 0;
-  
-  let tagsStr = '';
-  
-  if (typeof tags === 'string') {
-    tagsStr = tags;
-  } else if (Array.isArray(tags)) {
-    tagsStr = tags.join(' ');
-  } else if (typeof tags === 'object') {
-    tagsStr = JSON.stringify(tags);
+// Normaliza tags
+const normalizeTags = (tags) => {
+  if (Array.isArray(tags)) return tags;
+  if (typeof tags === "string") {
+    return tags
+      .replace(/[{}"]/g, "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
   }
-  
-  const tagsLower = tagsStr.toLowerCase();
-  
-  const pesos = {
-    'destacado': 40,
-    'urgente': 35,
-    'política': 25,
-    'economía': 20,
-    'internacional': 15,
-    'nacional': 15,
-    'sociedad': 10,
-    'deportes': 5,
-    'entretenimiento': 3,
-  };
-  
-  for (const [tag, peso] of Object.entries(pesos)) {
-    if (tagsLower.includes(tag)) return peso;
-  }
-  
-  return 0;
-}
-
-// Algoritmos de ordenamiento
-const sortAlgorithms = {
-  score: (stories) => {
-    if (!stories || !Array.isArray(stories)) return [];
-    return [...stories].sort((a, b) => {
-      const scoreA = calcularScore(a);
-      const scoreB = calcularScore(b);
-      return scoreB - scoreA;
-    });
-  },
-  
-  cobertura: (stories) => {
-    if (!stories || !Array.isArray(stories)) return [];
-    return [...stories].sort((a, b) => {
-      if (b.total_noticias !== a.total_noticias) {
-        return b.total_noticias - a.total_noticias;
-      }
-      return new Date(b.fecha) - new Date(a.fecha);
-    });
-  },
-  
-  cronologico: (stories) => {
-    if (!stories || !Array.isArray(stories)) return [];
-    return [...stories].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-  },
-  
-  categoria: (stories) => {
-    if (!stories || !Array.isArray(stories)) return [];
-    return [...stories].sort((a, b) => {
-      const pesoA = getPesoPorCategoria(a.tags);
-      const pesoB = getPesoPorCategoria(b.tags);
-      if (pesoB !== pesoA) return pesoB - pesoA;
-      return b.total_noticias - a.total_noticias;
-    });
-  },
+  return [];
 };
 
-export default function FeedController({ stories = [] }) {
-  const [activeView, setActiveView] = useState('score');
+export default function FeedController({ stories }) {
+  const [activeTab, setActiveTab] = useState('todas'); // 'todas', 'top', 'recientes', 'categoria'
+  
+  // Filtrar historias según tab activo
+  const filteredStories = stories.filter(story => {
+    if (activeTab === 'todas') return true;
+    if (activeTab === 'top') return story.peso >= 50;
+    if (activeTab === 'recientes') return true; // ya vienen ordenadas
+    return true;
+  });
 
-  const sortedStories = useMemo(() => {
-    if (!stories || stories.length === 0) return [];
-    const sorted = sortAlgorithms[activeView](stories);
-    return sorted.slice(0, 15); // Reducido a 15 para el feed central
-  }, [stories, activeView]);
-
-  const tabs = [
-    { id: 'score', label: '🔥 Top', short: '🔥' },
-    { id: 'cobertura', label: '📊 Cobertura', short: '📊' },
-    { id: 'cronologico', label: '📅 Recientes', short: '📅' },
-    { id: 'categoria', label: '🎯 Categoría', short: '🎯' },
-  ];
-
-  if (!stories || stories.length === 0) {
-    return (
-      <div className="text-center py-20 opacity-50 italic">
-        Conectando con la base de datos...
-      </div>
-    );
-  }
+  // Ordenar según tab
+  const sortedStories = [...filteredStories].sort((a, b) => {
+    if (activeTab === 'top') return b.peso - a.peso;
+    if (activeTab === 'recientes') return new Date(b.fecha) - new Date(a.fecha);
+    return b.peso - a.peso; // default por peso
+  });
 
   return (
-    <>
-      {/* Tabs más compactos */}
-      <div className="sticky top-0 z-40 bg-[#f5f2ed] border-b-2 border-[#1a1a1a] py-3 mb-6">
-        <div className="flex gap-1 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveView(tab.id)}
-              className={`
-                px-3 py-2 text-[10px] md:text-xs font-black uppercase tracking-wide whitespace-nowrap
-                transition-all duration-200 font-sans rounded-sm
-                ${activeView === tab.id
-                  ? 'bg-[#1a1a1a] text-white shadow-md'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }
-              `}
-            >
-              <span className="hidden md:inline">{tab.label}</span>
-              <span className="md:hidden">{tab.short}</span>
-            </button>
-          ))}
+    <div className="w-full">
+      {/* Tabs de navegación */}
+      <div className="border-b-2 border-gray-300 mb-8">
+        <div className="flex gap-4 font-sans text-xs font-bold uppercase">
+          <button
+            onClick={() => setActiveTab('todas')}
+            className={`pb-2 px-3 transition-colors ${
+              activeTab === 'todas' 
+                ? 'border-b-4 border-blue-600 text-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Todas
+          </button>
+          <button
+            onClick={() => setActiveTab('top')}
+            className={`pb-2 px-3 transition-colors ${
+              activeTab === 'top' 
+                ? 'border-b-4 border-blue-600 text-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Top
+          </button>
+          <button
+            onClick={() => setActiveTab('recientes')}
+            className={`pb-2 px-3 transition-colors ${
+              activeTab === 'recientes' 
+                ? 'border-b-4 border-blue-600 text-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Recientes
+          </button>
         </div>
       </div>
 
-      {/* Feed */}
-      <div>
-        {sortedStories.map((story, index) => (
-          <div key={story.id} className="relative">
-            {activeView === 'score' && index < 3 && (
-              <div className="absolute -top-2 -left-4 z-10 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded font-sans shadow-md">
-                {/* #{index + 1} */}
+      {/* Feed de historias */}
+      {sortedStories.length > 0 ? (
+        sortedStories.map((story) => {
+          const tags = normalizeTags(story.tags);
+
+          return (
+            <article
+              key={story.id}
+              className="mb-12 border-b border-gray-200 pb-8 last:border-0"
+            >
+              {/* Header con tags y contadores */}
+              <div className="flex justify-between items-start mb-3">
+                {/* Tags */}
+                <div className="flex gap-2 flex-wrap">
+                  {tags.slice(0, 3).map((tag, i) => (
+                    <span
+                      key={i}
+                      className="bg-gray-200 text-[10px] font-sans font-bold uppercase px-2 py-1 rounded"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Contador de artículos y medios */}
+                <span className="text-blue-600 font-sans text-[10px] font-bold border border-blue-600 px-2 py-1 rounded whitespace-nowrap">
+                  {story.total_noticias} ARTÍCULOS | {story.total_medios} MEDIOS
+                </span>
               </div>
-            )}
-            <StoryCardDiafano story={story} />
-          </div>
-        ))}
-      </div>
-    </>
+
+              {/* Título */}
+              <Link href={`/historia/${story.id}`}>
+                <h2 className="text-2xl md:text-3xl font-bold leading-tight mb-4 hover:text-blue-800 transition-colors cursor-pointer">
+                  {story.titulo_generado}
+                </h2>
+              </Link>
+
+              {/* Resumen */}
+              <p className="text-gray-700 leading-relaxed text-md mb-4 line-clamp-3">
+                {story.resumen_ia || "Sin resumen disponible."}
+              </p>
+
+              {/* 🆕 BARRA DE SESGO POLÍTICO */}
+              <BiasBar 
+                izquierda={story.sesgo_izquierda || 0}
+                centro_izq={story.sesgo_centro_izq || 0}
+                centro={story.sesgo_centro || 0}
+                centro_der={story.sesgo_centro_der || 0}
+                derecha={story.sesgo_derecha || 0}
+                className="mb-4"
+              />
+
+              {/* Timestamp */}
+              <div className="flex justify-end text-[10px] font-sans text-gray-400 font-bold uppercase">
+                {story.fecha
+                  ? new Date(story.fecha).toLocaleTimeString("es-CL", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : ""}
+              </div>
+            </article>
+          );
+        })
+      ) : (
+        <div className="text-center py-20 opacity-50 italic">
+          No hay historias para mostrar
+        </div>
+      )}
+    </div>
   );
 }

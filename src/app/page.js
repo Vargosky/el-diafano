@@ -16,32 +16,38 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+
+// src/app/page.js
+
 async function getStories() {
   try {
-    const { data, error } = await supabase
-      .from('historias')
-      .select(`
-        id,
-        titulo_generado,
-        fecha,
-        tags,
-        resumen_ia,
-        categoria_ia,
-        peso_relevancia,
-        noticias(id, medio_id)
-      `)
-      .eq('estado', 'activo')
-      .gte('fecha', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('peso_relevancia', { ascending: false })  // ⭐ Agregado: orden por peso
-      .limit(100);
+    const { data, error } = await supabase.rpc('get_stories_with_bias', {
+      dias_atras: 7,
+      limite: 100
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error RPC:', error);
+      throw error;
+    }
 
+    // Los datos ya vienen con sesgos calculados desde la BD
     const stories = data?.map(story => ({
-      ...story,
+      id: story.id,
+      titulo_generado: story.titulo_generado,
+      fecha: story.fecha,
+      tags: story.tags,
+      resumen_ia: story.resumen_ia,
+      categoria_ia: story.categoria_ia,
       peso: story.peso_relevancia || 0,
-      total_noticias: story.noticias?.length || 0,
-      total_medios: story.noticias ? new Set(story.noticias.map(n => n.medio_id)).size : 0,
+      total_noticias: story.total_noticias,
+      total_medios: story.total_medios,
+      // Sesgos ya calculados en BD
+      sesgo_izquierda: story.sesgo_izquierda,
+      sesgo_centro_izq: story.sesgo_centro_izq,
+      sesgo_centro: story.sesgo_centro,
+      sesgo_centro_der: story.sesgo_centro_der,
+      sesgo_derecha: story.sesgo_derecha,
     })) || [];
 
     return stories;
