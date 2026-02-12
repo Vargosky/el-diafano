@@ -1,4 +1,11 @@
 // src/app/page.js
+
+// ⭐ CRÍTICO: Configuración para evitar caché
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+
 import { createClient } from '@supabase/supabase-js';
 import FeedController from '@/components/FeedController';
 import SidebarSection from '@/components/SidebarSection';
@@ -25,6 +32,7 @@ async function getStories() {
       `)
       .eq('estado', 'activo')
       .gte('fecha', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('peso_relevancia', { ascending: false })  // ⭐ Agregado: orden por peso
       .limit(100);
 
     if (error) throw error;
@@ -43,7 +51,6 @@ async function getStories() {
   }
 }
 
-// Nueva función para obtener la última actualización
 async function getLastUpdate() {
   try {
     const { data, error } = await supabase
