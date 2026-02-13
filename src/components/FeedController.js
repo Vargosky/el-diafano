@@ -20,13 +20,13 @@ const normalizeTags = (tags) => {
 };
 
 export default function FeedController({ stories }) {
-  const [activeTab, setActiveTab] = useState('todas'); // 'todas', 'top', 'recientes', 'categoria'
+  const [activeTab, setActiveTab] = useState('todas');
   
   // Filtrar historias según tab activo
   const filteredStories = stories.filter(story => {
     if (activeTab === 'todas') return true;
     if (activeTab === 'top') return story.peso >= 50;
-    if (activeTab === 'recientes') return true; // ya vienen ordenadas
+    if (activeTab === 'recientes') return true;
     return true;
   });
 
@@ -34,7 +34,7 @@ export default function FeedController({ stories }) {
   const sortedStories = [...filteredStories].sort((a, b) => {
     if (activeTab === 'top') return b.peso - a.peso;
     if (activeTab === 'recientes') return new Date(b.fecha) - new Date(a.fecha);
-    return b.peso - a.peso; // default por peso
+    return b.peso - a.peso;
   });
 
   return (
@@ -85,10 +85,15 @@ export default function FeedController({ stories }) {
               key={story.id}
               className="mb-12 border-b border-gray-200 pb-8 last:border-0"
             >
-              {/* Header con tags y contadores */}
+              {/* Header con ID, tags y contadores */}
               <div className="flex justify-between items-start mb-3">
-                {/* Tags */}
-                <div className="flex gap-2 flex-wrap">
+                {/* Lado izquierdo: ID + Tags */}
+                <div className="flex gap-2 flex-wrap items-center">
+                  {/* ID de historia - MÁS GRANDE Y VISIBLE */}
+                  <span className="bg-blue-600 text-white text-xs font-mono font-black px-2.5 py-1 rounded-sm border-2 border-blue-700">
+                    #{story.id}
+                  </span>
+                  
                   {tags.slice(0, 3).map((tag, i) => (
                     <span
                       key={i}
@@ -117,7 +122,7 @@ export default function FeedController({ stories }) {
                 {story.resumen_ia || "Sin resumen disponible."}
               </p>
 
-              {/* 🆕 BARRA DE SESGO POLÍTICO */}
+              {/* BARRA DE SESGO POLÍTICO */}
               <BiasBar 
                 izquierda={story.sesgo_izquierda || 0}
                 centro_izq={story.sesgo_centro_izq || 0}
@@ -127,14 +132,22 @@ export default function FeedController({ stories }) {
                 className="mb-4"
               />
 
-              {/* Timestamp */}
-              <div className="flex justify-end text-[10px] font-sans text-gray-400 font-bold uppercase">
-                {story.fecha
-                  ? new Date(story.fecha).toLocaleTimeString("es-CL", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : ""}
+              {/* Footer con peso y timestamp */}
+              <div className="flex justify-between items-center text-[10px] font-sans text-gray-400 font-bold uppercase">
+                {/* Peso de relevancia */}
+                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded font-mono">
+                  Peso: {story.peso?.toFixed(1) || '0.0'}
+                </span>
+                
+                {/* Timestamp */}
+                <span>
+                  {story.fecha
+                    ? new Date(story.fecha).toLocaleTimeString("es-CL", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </span>
               </div>
             </article>
           );
