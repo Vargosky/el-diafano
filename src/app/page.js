@@ -2,6 +2,7 @@ import Header from '@/components/Header';
 import FeedController from '@/components/FeedController';
 import CategoryColumn from '@/components/CategoryColumn';
 import CategoryPieChart from '@/components/CategoryPieChart';
+import TopPersonajes from '@/components/TopPersonajes';  // ← NUEVO
 import TabSelector from '@/components/TabSelector';
 import { createClient } from '@/lib/supabase';
 
@@ -11,7 +12,6 @@ export const revalidate = 0;
 export default async function Home({ searchParams }) {
   const supabase = createClient();
   
-  // ✅ AWAIT searchParams primero
   const params = await searchParams;
   const tab = params?.tab || 'todas';
 
@@ -47,7 +47,9 @@ export default async function Home({ searchParams }) {
 
   const feed = feedCompleto.slice(0, 5);
 
+  // Queries de stats
   const { data: categoryStats } = await supabase.rpc('get_category_stats');
+  const { data: topPersonajes } = await supabase.rpc('get_top_personajes');  // ← NUEVO
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -59,17 +61,15 @@ export default async function Home({ searchParams }) {
         <div className="lg:hidden space-y-6">
           <TabSelector />
           
-          {/* DEBUG */}
-          {/* <div className="text-xs text-gray-600 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-            📊 Filtro: <strong>{tab}</strong> | 
-            Mostrando: <strong>{feed.length}</strong> historias |
-            IDs: {feed.map(h => h.id).join(', ')}
-          </div> */}
-          
           <FeedController stories={feed} key={tab} />
           
           {categoryStats && categoryStats.length > 0 && (
             <CategoryPieChart data={categoryStats} />
+          )}
+          
+          {/* ← NUEVO: Top Personajes en mobile */}
+          {topPersonajes && topPersonajes.length > 0 && (
+            <TopPersonajes data={topPersonajes} />
           )}
           
           <CategoryColumn 
@@ -93,6 +93,11 @@ export default async function Home({ searchParams }) {
               <CategoryPieChart data={categoryStats} />
             )}
             
+            {/* ← NUEVO: Top Personajes en desktop */}
+            {topPersonajes && topPersonajes.length > 0 && (
+              <TopPersonajes data={topPersonajes} />
+            )}
+            
             <CategoryColumn 
               title="ECONOMÍA" 
               stories={economia} 
@@ -102,12 +107,6 @@ export default async function Home({ searchParams }) {
 
           <section className="lg:col-span-6">
             <TabSelector />
-            
-            {/* DEBUG */}
-            {/* <div className="text-xs text-gray-600 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-4">
-              📊 Filtro: <strong>{tab}</strong> | 
-              Mostrando: <strong>{feed.length}</strong> historias
-            </div> */}
             
             <FeedController stories={feed} key={tab} />
           </section>
