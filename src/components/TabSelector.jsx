@@ -8,8 +8,9 @@ export default function TabSelector() {
   const activeTab = searchParams.get('tab') || 'todas';
 
   const tabs = [
-    { id: 'todas', label: 'Todas' },
+    { id: 'todas', label: 'Relevancia' },
     { id: 'top', label: 'Top' },
+    { id: 'cobertura', label: 'Cobertura' },  // ✅ NUEVA
     { id: 'recientes', label: 'Recientes' }
   ];
 

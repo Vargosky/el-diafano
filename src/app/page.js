@@ -2,7 +2,7 @@ import Header from '@/components/Header';
 import FeedController from '@/components/FeedController';
 import CategoryColumn from '@/components/CategoryColumn';
 import CategoryPieChart from '@/components/CategoryPieChart';
-import TopPersonajes from '@/components/TopPersonajes';  // ← NUEVO
+import TopPersonajes from '@/components/TopPersonajes';
 import TabSelector from '@/components/TabSelector';
 import { createClient } from '@/lib/supabase';
 
@@ -28,9 +28,61 @@ export default async function Home({ searchParams }) {
   // FILTRAR Y ORDENAR
   let todasHistorias = [...historias];
   
-  if (tab === 'top') {
-    todasHistorias.sort((a, b) => (b.peso_relevancia || 0) - (a.peso_relevancia || 0));
+  if (tab === 'todas') {
+    const tiempoActual = new Date().getTime();
+    
+    // Filtrar historias de las últimas 48 horas
+    const historiasRecientes = historias.filter(historia => {
+      const fechaNoticia = new Date(historia.fecha);
+      const edadNoticia = (tiempoActual - fechaNoticia.getTime()) / (1000 * 60 * 60);
+      return edadNoticia <= 48; // 48 horas
+    });
+
+    // console.log('Historias recientes (48h):', historiasRecientes.length);
+  
+    // Ordenar por número de medios, luego por número de noticias, luego por peso de relevancia
+    const historiasOrdenadas = historiasRecientes.sort((a, b) => {
+      // Primero por total_medios
+      if (b.total_medios !== a.total_medios) {
+        return b.total_medios - a.total_medios;
+      }
+      
+      // Si empatan en medios, por total_noticias
+      if (b.total_noticias !== a.total_noticias) {
+        return b.total_noticias - a.total_noticias;
+      }
+      
+      // Si empatan, por peso de relevancia
+      return (b.peso_relevancia || 0) - (a.peso_relevancia || 0);
+    });
+  
+    // Tomar las 5 primeras historias
+    todasHistorias = historiasOrdenadas.slice(0, 5);
+  }
+  
+  
+  
+  else if (tab === 'top') {
+    // Primero ordenar por total_medios, luego por total_noticias
+    todasHistorias.sort((a, b) => {
+      if (b.total_medios !== a.total_medios) {
+        return b.total_medios - a.total_medios;
+      }
+      return (b.total_noticias || 0) - (a.total_noticias || 0);
+    });
+    
+  } else if (tab === 'cobertura') {
+    // Cobertura - Estilo Google News
+    // Primero por total_medios, luego por fecha
+    todasHistorias.sort((a, b) => {
+      if (b.total_medios !== a.total_medios) {
+        return b.total_medios - a.total_medios;
+      }
+      return new Date(b.fecha) - new Date(a.fecha);
+    });
+    
   } else if (tab === 'recientes') {
+    // Recientes: Solo por fecha
     todasHistorias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   }
 
@@ -47,9 +99,8 @@ export default async function Home({ searchParams }) {
 
   const feed = feedCompleto.slice(0, 5);
 
-  // Queries de stats
   const { data: categoryStats } = await supabase.rpc('get_category_stats');
-  const { data: topPersonajes } = await supabase.rpc('get_top_personajes');  // ← NUEVO
+  const { data: topPersonajes } = await supabase.rpc('get_top_personajes');
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -67,7 +118,6 @@ export default async function Home({ searchParams }) {
             <CategoryPieChart data={categoryStats} />
           )}
           
-          {/* ← NUEVO: Top Personajes en mobile */}
           {topPersonajes && topPersonajes.length > 0 && (
             <TopPersonajes data={topPersonajes} />
           )}
@@ -93,7 +143,6 @@ export default async function Home({ searchParams }) {
               <CategoryPieChart data={categoryStats} />
             )}
             
-            {/* ← NUEVO: Top Personajes en desktop */}
             {topPersonajes && topPersonajes.length > 0 && (
               <TopPersonajes data={topPersonajes} />
             )}

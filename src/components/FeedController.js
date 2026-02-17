@@ -2,6 +2,9 @@ import Link from 'next/link';
 import BiasBar from './BiasBar';
 
 export default function FeedController({ stories }) {
+  console.log('Stories recibidas en FeedController:', stories);
+  console.log('Número de stories:', stories ? stories.length : 'stories es null/undefined');
+
   if (!stories || stories.length === 0) {
     return (
       <div className="text-center py-20 text-gray-500">
@@ -13,8 +16,8 @@ export default function FeedController({ stories }) {
   return (
     <div className="space-y-4 md:space-y-6">
       {stories.map((story) => (
-        <article 
-          key={story.id} 
+        <article
+          key={story.id}
           className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow"
         >
           {/* Header con badges */}
@@ -22,9 +25,9 @@ export default function FeedController({ stories }) {
             <span className="bg-blue-600 text-white px-2 py-1 text-xs font-mono font-bold rounded">
               #{story.id}
             </span>
-            
+
             {story.tags && story.tags.slice(0, 3).map((tag, i) => (
-              <span 
+              <span
                 key={i}
                 className="bg-gray-100 text-gray-700 px-2 py-1 text-xs font-semibold uppercase rounded"
               >
@@ -52,7 +55,7 @@ export default function FeedController({ stories }) {
           )}
 
           {/* BiasBar */}
-          <BiasBar 
+          <BiasBar
             izquierda={story.sesgo_izquierda || 0}
             centroIzq={story.sesgo_centro_izq || 0}
             centro={story.sesgo_centro || 0}
@@ -67,9 +70,13 @@ export default function FeedController({ stories }) {
               Peso: {story.peso_relevancia?.toFixed(1) || '0.0'}
             </span>
             <span className="text-gray-500">
-              {new Date(story.fecha).toLocaleTimeString('es-CL', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+              {new Date(story.fecha).toLocaleString('es-CL', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
               })}
             </span>
           </div>
