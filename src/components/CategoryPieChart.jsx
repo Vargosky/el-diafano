@@ -5,15 +5,6 @@ export default function CategoryPieChart({ data }) {
     return null;
   }
 
-  // Calcular total y porcentajes
-  const total = data.reduce((sum, item) => sum + item.count, 0);
-  
-  const chartData = data.map(item => ({
-    categoria: item.categoria,
-    count: item.count,
-    percentage: ((item.count / total) * 100).toFixed(1)
-  }));
-
   // Colores por categoría
   const colors = {
     'Política': '#1565C0',
@@ -35,14 +26,14 @@ export default function CategoryPieChart({ data }) {
       
       {/* Lista con barras */}
       <div className="space-y-3">
-        {chartData.slice(0, 6).map((item, i) => (
+        {data.slice(0, 6).map((item, i) => (
           <div key={i}>
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-semibold text-gray-700">
                 {item.categoria}
               </span>
               <span className="text-xs font-bold text-gray-900">
-                {item.percentage}%
+                {item.porcentaje}%
               </span>
             </div>
             
@@ -51,14 +42,14 @@ export default function CategoryPieChart({ data }) {
               <div 
                 className="h-2 rounded-full transition-all"
                 style={{ 
-                  width: `${item.percentage}%`,
+                  width: `${item.porcentaje}%`,
                   backgroundColor: colors[item.categoria] || '#616161'
                 }}
               />
             </div>
 
             <div className="text-xs text-gray-500 mt-1">
-              {item.count} historias
+              {item.total_noticias} historias
             </div>
           </div>
         ))}

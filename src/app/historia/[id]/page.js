@@ -1,5 +1,3 @@
-// src/app/historia/[id]/page.js
-
 import pool from '@/lib/db';
 import Link from 'next/link';
 import BiasBar from '@/components/BiasBar';
@@ -18,19 +16,21 @@ const SESGO_COLORS = {
 async function getStoryData(id) {
   try {
     if (!pool) {
-      return { story: null, sources: [], sesgos: {} };
+      return { story: null, sources: [] };
     }
 
     // 1. Historia principal
     const storyRes = await pool.query('SELECT * FROM historias WHERE id = $1', [id]);
-    
+
+    console.log('Resultado de la consulta de historia:', storyRes);
+
     if (storyRes.rowCount === 0) {
-      return { story: null, sources: [], sesgos: {} };
+      return { story: null, sources: [] };
     }
 
     const story = storyRes.rows[0];
 
-    // 2. Noticias con datos del medio (incluyendo sesgo)
+    // 2. Noticias con datos del medio
     const sourcesRes = await pool.query(`
       SELECT 
         n.*,
@@ -42,44 +42,23 @@ async function getStoryData(id) {
       ORDER BY n.created_at DESC
     `, [id]);
 
-    // 3. Calcular sesgos para BiasBar
-    const sesgos = {
-      izquierda: 0,
-      centro_izq: 0,
-      centro: 0,
-      centro_der: 0,
-      derecha: 0
-    };
-
-    const mediosUnicos = new Set();
-    
-    sourcesRes.rows.forEach(source => {
-      if (source.medio_id && !mediosUnicos.has(source.medio_id)) {
-        mediosUnicos.add(source.medio_id);
-        const sesgo = source.sesgo_politico;
-        
-        if (sesgo === 'izquierda') sesgos.izquierda++;
-        else if (sesgo === 'centro_izquierda' || sesgo === 'centro-izquierda') sesgos.centro_izq++;
-        else if (sesgo === 'centro') sesgos.centro++;
-        else if (sesgo === 'centro_derecha' || sesgo === 'centro-derecha') sesgos.centro_der++;
-        else if (sesgo === 'derecha') sesgos.derecha++;
-      }
-    });
-    
     return {
       story: story,
-      sources: sourcesRes.rows,
-      sesgos
+      sources: sourcesRes.rows
     };
   } catch (error) {
     console.error("[ERROR] Error en BD:", error.message);
-    return { story: null, sources: [], sesgos: {} };
+    return { story: null, sources: [] };
   }
 }
 
 export default async function StoryPage({ params }) {
   const { id } = await params;
-  const { story, sources, sesgos } = await getStoryData(id);
+  const { story, sources } = await getStoryData(id);
+
+  // Obtener los datos de sesgo directamente con la función
+  const biasRes = await pool.query('SELECT * FROM get_story_bias_stats($1)', [id]);
+  const sesgosData = biasRes.rows[0];
 
   if (!story) {
     return (
@@ -101,13 +80,13 @@ export default async function StoryPage({ params }) {
           <Link href="/" className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] hover:underline">
             ← Portada El Diáfano
           </Link>
-          
+
           {/* ID de historia */}
           <span className="bg-gray-800 text-white text-[9px] font-mono font-bold px-2 py-1 rounded">
             Historia #{id}
           </span>
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl font-serif font-extrabold mt-6 leading-tight tracking-tight text-gray-900">
           {story.titulo_generado}
         </h1>
@@ -130,12 +109,13 @@ export default async function StoryPage({ params }) {
           <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">
             Cobertura por Sesgo Político
           </h3>
-          <BiasBar 
-            izquierda={sesgos.izquierda}
-            centro_izq={sesgos.centro_izq}
-            centro={sesgos.centro}
-            centro_der={sesgos.centro_der}
-            derecha={sesgos.derecha}
+          <BiasBar
+            izquierda={parseInt(sesgosData.izquierda) || 0}
+            centro_izq={parseInt(sesgosData.centro_izq) || 0}
+            centro={parseInt(sesgosData.centro) || 0}
+            centro_der={parseInt(sesgosData.centro_der) || 0}
+            derecha={parseInt(sesgosData.derecha) || 0}
+            total_noticias={parseInt(sesgosData.total_noticias) || 0}
           />
         </div>
       </header>
@@ -152,21 +132,20 @@ export default async function StoryPage({ params }) {
           {sources.length > 0 ? (
             sources.map((source) => {
               const sesgo = source.sesgo_politico || 'centro';
-              const sesgoKey = sesgo.replace('-', '_'); // centro-izquierda → centro_izquierda
+              const sesgoKey = sesgo.replace('-', '_');
               const colors = SESGO_COLORS[sesgoKey] || SESGO_COLORS.centro;
 
               return (
-                <a 
-                  key={source.id} 
-                  href={source.link} 
-                  target="_blank" 
+                <a
+                  key={source.id}
+                  href={source.link}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="block p-6 bg-[#fdfcfb] border border-[#e6e2d9] hover:border-blue-300 transition-all group"
                 >
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2">
-                      {/* Badge del medio con color dinámico */}
-                      <span 
+                      <span
                         className="text-[10px] font-black uppercase px-2 py-1 rounded border"
                         style={{
                           backgroundColor: colors.bg,
@@ -176,8 +155,7 @@ export default async function StoryPage({ params }) {
                       >
                         {source.medio_nombre || 'Medio Nacional'}
                       </span>
-                      
-                      {/* IDs de debug */}
+
                       <span className="bg-gray-200 text-gray-600 text-[8px] font-mono px-1.5 py-0.5 rounded">
                         N:{source.id}
                       </span>
@@ -185,7 +163,7 @@ export default async function StoryPage({ params }) {
                         M:{source.medio_id}
                       </span>
                     </div>
-                    
+
                     <span className="text-[10px] text-gray-400 font-mono">
                       {new Date(source.created_at).toLocaleDateString('es-CL', {
                         day: '2-digit',
@@ -194,11 +172,11 @@ export default async function StoryPage({ params }) {
                       })}
                     </span>
                   </div>
-                  
+
                   <h4 className="text-xl font-bold group-hover:text-blue-800 leading-snug mb-3">
                     {source.titulo}
                   </h4>
-                  
+
                   <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed italic">
                     {source.resumen_ia || "Haga clic para leer la cobertura completa."}
                   </p>

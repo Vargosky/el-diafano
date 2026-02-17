@@ -1,32 +1,54 @@
-// src/components/BiasBar.jsx
-
 export default function BiasBar({ 
   izquierda = 0, 
   centro_izq = 0, 
   centro = 0, 
   centro_der = 0, 
   derecha = 0,
+  total_noticias = 0,
+  debug,  // Nuevo parámetro de depuración
   className = ""
 }) {
+  // Log de todos los datos recibidos
+  console.log('Debug datos completos:', debug);
+  console.log('Valores de sesgo:', {
+    izquierda, 
+    centro_izq, 
+    centro, 
+    centro_der, 
+    derecha,
+    total_noticias
+  });
+
+  console.log('Debug BiasBar:', {
+    izquierda: typeof izquierda, 
+    centro_izq: typeof centro_izq, 
+    centro: typeof centro, 
+    centro_der: typeof centro_der, 
+    derecha: typeof derecha,
+    total_noticias,
+    debug
+  });
+
+  // Calcular total de noticias por sesgo
   const total = izquierda + centro_izq + centro + centro_der + derecha;
   
   if (total === 0) {
     return (
       <div className={`text-xs text-gray-400 italic ${className}`}>
-        Sin cobertura mediática
+        Sin cobertura
       </div>
     );
   }
   
   // Calcular porcentajes
   const pct = {
-    izq: (izquierda / total * 100).toFixed(0),
-    cizq: (centro_izq / total * 100).toFixed(0),
-    cen: (centro / total * 100).toFixed(0),
-    cder: (centro_der / total * 100).toFixed(0),
-    der: (derecha / total * 100).toFixed(0),
+    izq: total > 0 ? (izquierda / total * 100).toFixed(0) : 0,
+    cizq: total > 0 ? (centro_izq / total * 100).toFixed(0) : 0,
+    cen: total > 0 ? (centro / total * 100).toFixed(0) : 0,
+    cder: total > 0 ? (centro_der / total * 100).toFixed(0) : 0,
+    der: total > 0 ? (derecha / total * 100).toFixed(0) : 0,
   };
-  
+
   // Colores Ground News style
   const colores = {
     izq: '#D32F2F',      // Rojo intenso
@@ -106,9 +128,9 @@ export default function BiasBar({
         )}
       </div>
       
-      {/* Total de medios */}
+      {/* Total de noticias */}
       <div className="text-right text-[10px] text-gray-500 mt-1 font-sans">
-        {total} {total === 1 ? 'medio' : 'medios'}
+        {total} {total === 1 ? 'noticia' : 'noticias'}
       </div>
     </div>
   );
