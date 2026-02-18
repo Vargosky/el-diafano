@@ -46,19 +46,18 @@ export default function CategoryColumn({ title, stories, color = 'blue' }) {
 
             {/* Metadata */}
             <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-              <span>{story.total_noticias} medios</span>
+              <span>{story.total_medios} medios</span>
               <span>•</span>
-              <span>{story.total_medios} artículos</span>
+              <span>{story.total_noticias} artículos</span>
             </div>
 
             {/* BiasBar mini */}
             <BiasBar 
               izquierda={story.sesgo_izquierda || 0}
-              centroIzq={story.sesgo_centro_izq || 0}
+              centro_izq={story.sesgo_centro_izq || 0}
               centro={story.sesgo_centro || 0}
-              centroDer={story.sesgo_centro_der || 0}
+              centro_der={story.sesgo_centro_der || 0}
               derecha={story.sesgo_derecha || 0}
-              showLabels={false}
             />
           </Link>
         ))}

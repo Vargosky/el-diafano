@@ -60,8 +60,6 @@ export default async function Home({ searchParams }) {
     todasHistorias = historiasOrdenadas.slice(0, 5);
   }
   
-  
-  
   else if (tab === 'top') {
     // Primero ordenar por total_medios, luego por total_noticias
     todasHistorias.sort((a, b) => {
@@ -86,14 +84,25 @@ export default async function Home({ searchParams }) {
     todasHistorias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   }
 
-  const economia = todasHistorias
+  // Las columnas laterales siempre usan el array completo (independiente del tab)
+  // para garantizar que siempre tengan contenido
+  const economia = historias
     .filter(h => h.categoria_ia === 'Economía')
+    .sort((a, b) => {
+      if (b.total_medios !== a.total_medios) return b.total_medios - a.total_medios;
+      return (b.total_noticias || 0) - (a.total_noticias || 0);
+    })
     .slice(0, 6);
 
-  const politica = todasHistorias
+  const politica = historias
     .filter(h => h.categoria_ia === 'Política')
+    .sort((a, b) => {
+      if (b.total_medios !== a.total_medios) return b.total_medios - a.total_medios;
+      return (b.total_noticias || 0) - (a.total_noticias || 0);
+    })
     .slice(0, 6);
 
+  // El feed central excluye Economía y Política de todasHistorias (ya filtrado/ordenado por tab)
   const feedCompleto = todasHistorias
     .filter(h => !['Economía', 'Política'].includes(h.categoria_ia));
 
