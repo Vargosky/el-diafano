@@ -1,9 +1,3 @@
-¡Claro que sí! Aquí tienes un README.md profesional y completo para tu proyecto "El Diáfano".
-
-Está redactado para que cualquier desarrollador (o tu yo del futuro) entienda rápidamente qué es el proyecto, cómo está construido y cómo funciona la lógica de datos e IA.
-
-Puedes copiar y pegar este contenido directamente en un archivo README.md en la raíz de tu repositorio.
-
 📰 El Diáfano
 Transparencia en las noticias. Un agregador de medios chilenos impulsado por IA que analiza sesgos, detecta entidades y ofrece resúmenes neutrales.
 

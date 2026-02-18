@@ -28,12 +28,12 @@ function esHoy(fechaStr) {
 export default async function Home({ searchParams }) {
   const supabase = createClient();
 
-  const params  = await searchParams;
-  const tab     = params?.tab   || 'todas';
+  const params = await searchParams;
+  const tab = params?.tab || 'todas';
 
   // ── Fecha seleccionada ────────────────────────────────────────────────────
-  const hoy     = new Date();
-  const hoyStr  = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  const hoy = new Date();
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
   const fechaStr = (params?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(params.fecha))
     ? params.fecha
     : hoyStr;
@@ -72,12 +72,12 @@ export default async function Home({ searchParams }) {
       historias = (data || []).map(h => ({
         ...h,
         total_noticias: h.noticias_procesadas_count || h.conteo || 0,
-        total_medios:   0, // no disponible sin RPC, se puede agregar después
-        sesgo_izquierda:   0,
-        sesgo_centro_izq:  0,
-        sesgo_centro:      0,
-        sesgo_centro_der:  0,
-        sesgo_derecha:     0,
+        total_medios: 0, // no disponible sin RPC, se puede agregar después
+        sesgo_izquierda: 0,
+        sesgo_centro_izq: 0,
+        sesgo_centro: 0,
+        sesgo_centro_der: 0,
+        sesgo_derecha: 0,
       }));
     }
   } else {
@@ -107,7 +107,7 @@ export default async function Home({ searchParams }) {
       });
     }
     todasHistorias = todasHistorias.sort((a, b) => {
-      if (b.total_medios !== a.total_medios)   return b.total_medios - a.total_medios;
+      if (b.total_medios !== a.total_medios) return b.total_medios - a.total_medios;
       if (b.total_noticias !== a.total_noticias) return b.total_noticias - a.total_noticias;
       return (b.peso_relevancia || 0) - (a.peso_relevancia || 0);
     }).slice(0, 5);
@@ -188,8 +188,6 @@ export default async function Home({ searchParams }) {
 
         {/* MOBILE LAYOUT */}
         <div className="lg:hidden space-y-6">
-          {/* DateNavigator mobile: encima del feed */}
-          <DateNavigator activeDates={activeDates} />
 
           <TabSelector />
 
@@ -202,9 +200,11 @@ export default async function Home({ searchParams }) {
           {topPersonajes && topPersonajes.length > 0 && (
             <TopPersonajes data={topPersonajes} />
           )}
+          {/* DateNavigator mobile: encima del feed */}
+          <DateNavigator activeDates={activeDates} />
 
-          <CategoryColumn title="POLÍTICA"  stories={politica} color="blue"  />
-          <CategoryColumn title="ECONOMÍA"  stories={economia} color="green" />
+          <CategoryColumn title="POLÍTICA" stories={politica} color="blue" />
+          <CategoryColumn title="ECONOMÍA" stories={economia} color="green" />
         </div>
 
         {/* DESKTOP LAYOUT */}
