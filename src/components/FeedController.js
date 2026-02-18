@@ -2,9 +2,6 @@ import Link from 'next/link';
 import BiasBar from './BiasBar';
 
 export default function FeedController({ stories }) {
-  // console.log('Stories recibidas en FeedController:', stories);
-  // console.log('Número de stories:', stories ? stories.length : 'stories es null/undefined');
-
   if (!stories || stories.length === 0) {
     return (
       <div className="text-center py-20 text-gray-500">
@@ -55,16 +52,6 @@ export default function FeedController({ stories }) {
           )}
 
           {/* BiasBar */}
-
-          {/* <BiasBar
-            izquierda={story.sesgo_izquierda || 0}
-            centro_izq={story.sesgo_centro_izq || 0}
-            centro={story.sesgo_centro || 0}
-            centro_der={story.sesgo_centro_der || 0}
-            derecha={story.sesgo_derecha || 0}
-            total_noticias={story.total_noticias}
-          /> */}
-
           <BiasBar
             izquierda={story.sesgo_izquierda || 0}
             centro_izq={story.sesgo_centro_izq || 0}
@@ -72,9 +59,7 @@ export default function FeedController({ stories }) {
             centro_der={story.sesgo_centro_der || 0}
             derecha={story.sesgo_derecha || 0}
             total_noticias={story.total_noticias}
-            debug={story}  // Pasamos toda la historia para depuración
           />
-
 
           {/* Footer */}
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 text-xs">
