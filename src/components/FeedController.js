@@ -33,11 +33,11 @@ export default function FeedController({ stories }) {
             ))}
 
             <span className="text-xs text-gray-500 w-full sm:w-auto sm:ml-auto mt-1 sm:mt-0">
-              {story.total_noticias} artículos | {story.total_medios} medios
+              {story.total_noticias} articulos | {story.total_medios} medios
             </span>
           </div>
 
-          {/* Título */}
+          {/* Titulo */}
           <Link href={`/historia/${story.id}`}>
             <h2 className="font-serif text-xl md:text-2xl font-bold text-gray-900 mb-3 leading-tight hover:text-blue-600 cursor-pointer">
               {story.titulo_generado}
@@ -73,7 +73,7 @@ export default function FeedController({ stories }) {
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: true
+                hour12: true,
               })}
             </span>
           </div>
