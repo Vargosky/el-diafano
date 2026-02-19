@@ -10,41 +10,38 @@ import { createClient } from '@/lib/supabase';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// ─── Helper: rango de un día completo en UTC ──────────────────────────────────
-function diaRango(fechaStr) {
-  // fechaStr: 'YYYY-MM-DD'
-  return {
-    desde: `${fechaStr}T00:00:00+00:00`,
-    hasta: `${fechaStr}T23:59:59+00:00`,
-  };
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getHoyStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function esHoy(fechaStr) {
-  const hoy = new Date();
-  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-  return fechaStr === hoyStr;
+  return fechaStr === getHoyStr();
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home({ searchParams }) {
   const supabase = createClient();
 
-  const params = await searchParams;
-  const tab = params?.tab || 'todas';
+  const params  = await searchParams;
+  const tab     = params?.tab || 'todas';
 
-  // ── Fecha seleccionada ────────────────────────────────────────────────────
-  const hoy = new Date();
-  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  // Fecha seleccionada — desde URL o hoy
+  const hoyStr   = getHoyStr();
   const fechaStr = (params?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(params.fecha))
     ? params.fecha
     : hoyStr;
   const modoArchivo = !esHoy(fechaStr);
 
-  // ── Fetch de historias ─────────────────────────────────────────────────────
+  // ── Fetch historias ────────────────────────────────────────────────────────
+
   let historias = [];
 
   if (modoArchivo) {
-    // MODO ARCHIVO: traer historias del día exacto desde la tabla
-    const { desde, hasta } = diaRango(fechaStr);
+    // Modo archivo: query directo filtrando por día exacto
     const { data, error } = await supabase
       .from('historias')
       .select(`
@@ -60,31 +57,31 @@ export default async function Home({ searchParams }) {
         fecha,
         noticias_procesadas_count
       `)
-      .gte('fecha', desde)
-      .lte('fecha', hasta)
+      .gte('fecha', `${fechaStr}T00:00:00+00:00`)
+      .lte('fecha', `${fechaStr}T23:59:59+00:00`)
       .order('peso_relevancia', { ascending: false })
       .limit(100);
 
     if (error) {
-      console.error('Error fetching historias de archivo:', error);
+      console.error('Error fetching historias archivo:', error);
     } else {
       // Normalizar al mismo shape que get_stories_with_bias
       historias = (data || []).map(h => ({
         ...h,
-        total_noticias: h.noticias_procesadas_count || h.conteo || 0,
-        total_medios: 0, // no disponible sin RPC, se puede agregar después
-        sesgo_izquierda: 0,
-        sesgo_centro_izq: 0,
-        sesgo_centro: 0,
-        sesgo_centro_der: 0,
-        sesgo_derecha: 0,
+        total_noticias:    h.noticias_procesadas_count || h.conteo || 0,
+        total_medios:      0,
+        sesgo_izquierda:   0,
+        sesgo_centro_izq:  0,
+        sesgo_centro:      0,
+        sesgo_centro_der:  0,
+        sesgo_derecha:     0,
       }));
     }
   } else {
-    // MODO HOY: usar la RPC existente (últimos 7 días, con bias calculado)
+    // Modo hoy: RPC con bias calculado — 2 días = 48h
     const { data, error } = await supabase.rpc('get_stories_with_bias', {
-      dias_atras: 7,
-      limite: 100,
+      dias_atras: 2,
+      limite:     100,
     });
 
     if (error) {
@@ -94,23 +91,25 @@ export default async function Home({ searchParams }) {
     historias = data || [];
   }
 
-  // ── Filtrar y ordenar según tab ───────────────────────────────────────────
+  // ── Filtro de seguridad: no mostrar noticias del futuro ────────────────────
+  const ahora = new Date().getTime();
+  historias = historias.filter(h => {
+    if (!h.fecha) return false;
+    return new Date(h.fecha).getTime() <= ahora;
+  });
+
+  // ── Ordenar según tab ──────────────────────────────────────────────────────
+
   let todasHistorias = [...historias];
 
   if (tab === 'todas') {
-    if (!modoArchivo) {
-      // Solo en modo hoy filtramos por 48h
-      const tiempoActual = new Date().getTime();
-      todasHistorias = historias.filter(h => {
-        const edad = (tiempoActual - new Date(h.fecha).getTime()) / (1000 * 60 * 60);
-        return edad <= 48;
-      });
-    }
-    todasHistorias = todasHistorias.sort((a, b) => {
-      if (b.total_medios !== a.total_medios) return b.total_medios - a.total_medios;
-      if (b.total_noticias !== a.total_noticias) return b.total_noticias - a.total_noticias;
-      return (b.peso_relevancia || 0) - (a.peso_relevancia || 0);
-    }).slice(0, 5);
+    todasHistorias = todasHistorias
+      .sort((a, b) => {
+        if (b.total_medios !== a.total_medios)     return b.total_medios - a.total_medios;
+        if (b.total_noticias !== a.total_noticias) return b.total_noticias - a.total_noticias;
+        return (b.peso_relevancia || 0) - (a.peso_relevancia || 0);
+      })
+      .slice(0, 5);
 
   } else if (tab === 'top') {
     todasHistorias.sort((a, b) => {
@@ -128,7 +127,8 @@ export default async function Home({ searchParams }) {
     todasHistorias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   }
 
-  // ── Columnas laterales ─────────────────────────────────────────────────────
+  // ── Columnas laterales (del pool completo del día) ─────────────────────────
+
   const economia = historias
     .filter(h => h.categoria_ia === 'Economía')
     .sort((a, b) => {
@@ -151,14 +151,14 @@ export default async function Home({ searchParams }) {
     .slice(0, 5);
 
   // ── Stats sidebar ──────────────────────────────────────────────────────────
-  // En modo archivo, los stats de personajes y categorías se filtran por fecha
+
   const [{ data: categoryStats }, { data: topPersonajes }] = await Promise.all([
     supabase.rpc('get_category_stats'),
     supabase.rpc('get_top_personajes'),
   ]);
 
-  // ── Fechas activas para el calendario ─────────────────────────────────────
-  // Trae las fechas distintas que tienen historias (para los puntitos)
+  // ── Fechas activas para puntitos del calendario ────────────────────────────
+
   const { data: fechasData } = await supabase
     .from('historias')
     .select('fecha')
@@ -168,11 +168,13 @@ export default async function Home({ searchParams }) {
     ? [...new Set(fechasData.map(h => h.fecha?.slice(0, 10)).filter(Boolean))]
     : [];
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <Header />
 
-      {/* Banner de modo archivo */}
+      {/* Banner modo archivo */}
       {modoArchivo && (
         <div className="bg-amber-50 border-b border-amber-200 text-center py-2 px-4 text-sm text-amber-800 font-medium">
           Estás viendo la edición del{' '}
@@ -186,53 +188,49 @@ export default async function Home({ searchParams }) {
 
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-8">
 
-        {/* MOBILE LAYOUT */}
-        <div className="lg:hidden space-y-6">
-
+        {/* ── MOBILE LAYOUT ── */}
+        <div className="lg:hidden space-y-6 pb-24">
           <TabSelector />
-
           <FeedController stories={feed} key={tab + fechaStr} />
 
           {categoryStats && categoryStats.length > 0 && (
             <CategoryPieChart data={categoryStats} />
           )}
-
           {topPersonajes && topPersonajes.length > 0 && (
             <TopPersonajes data={topPersonajes} />
           )}
-          {/* DateNavigator mobile: encima del feed */}
-          <DateNavigator activeDates={activeDates} />
 
-          <CategoryColumn title="POLÍTICA" stories={politica} color="blue" />
+          <CategoryColumn title="POLÍTICA" stories={politica} color="blue"  />
           <CategoryColumn title="ECONOMÍA" stories={economia} color="green" />
         </div>
 
-        {/* DESKTOP LAYOUT */}
+        {/* ── BARRA INFERIOR MOBILE ── */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg px-4 py-2">
+          <DateNavigator activeDates={activeDates} />
+        </div>
+
+        {/* ── DESKTOP LAYOUT ── */}
         <div className="hidden lg:grid lg:grid-cols-12 gap-6">
 
-          {/* Sidebar izquierdo */}
           <aside className="lg:col-span-3 space-y-6">
             {categoryStats && categoryStats.length > 0 && (
               <CategoryPieChart data={categoryStats} />
             )}
-
             {topPersonajes && topPersonajes.length > 0 && (
               <TopPersonajes data={topPersonajes} />
             )}
 
-            {/* ── DateNavigator: después de TopPersonajes ── */}
+            {/* DateNavigator: después de TopPersonajes */}
             <DateNavigator activeDates={activeDates} />
 
             <CategoryColumn title="ECONOMÍA" stories={economia} color="green" />
           </aside>
 
-          {/* Feed central */}
           <section className="lg:col-span-6">
             <TabSelector />
             <FeedController stories={feed} key={tab + fechaStr} />
           </section>
 
-          {/* Sidebar derecho */}
           <aside className="lg:col-span-3">
             <CategoryColumn title="POLÍTICA" stories={politica} color="blue" />
           </aside>
