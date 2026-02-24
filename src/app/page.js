@@ -5,14 +5,10 @@ import CategoryPieChart from '@/components/CategoryPieChart';
 import TopPersonajes from '@/components/TopPersonajes';
 import TabSelector from '@/components/TabSelector';
 import DateNavigator from '@/components/DateNavigator';
+import MediosChart from '@/components/MediosChart';
 import { createClient } from '@/lib/supabase';
-import {
-  getHistoriasHoy,
-  getHistoriasArchivo,
-  getActiveDates,
-  prepararFeed,
-} from '@/lib/queries/historias';
-import { getCategoryStats } from '@/lib/queries/stats';
+import { getHistoriasHoy, getHistoriasArchivo, getActiveDates, prepararFeed } from '@/lib/queries/historias';
+import { getCategoryStats, getNoticiasPorMedio } from '@/lib/queries/stats';
 import { getTopPersonajes } from '@/lib/queries/personajes';
 
 export const dynamic = 'force-dynamic';
@@ -34,15 +30,14 @@ export default async function Home({ searchParams }) {
     : hoyStr;
   const modoArchivo = fechaStr !== hoyStr;
 
-  // Fetch en paralelo
-  const [historias, categoryStats, topPersonajes, activeDates] = await Promise.all([
+  const [historias, categoryStats, topPersonajes, activeDates, noticiasPorMedio] = await Promise.all([
     modoArchivo ? getHistoriasArchivo(supabase, fechaStr) : getHistoriasHoy(supabase),
     getCategoryStats(supabase),
     getTopPersonajes(supabase),
     getActiveDates(supabase),
+    getNoticiasPorMedio(supabase, 7),
   ]);
 
-  // Toda la logica de ordenamiento y filtrado en la libreria
   const { feed, politica, economia } = prepararFeed(historias, tab);
 
   return (
@@ -66,8 +61,9 @@ export default async function Home({ searchParams }) {
         <div className="lg:hidden space-y-6 pb-24">
           <TabSelector />
           <FeedController stories={feed} key={tab + fechaStr} />
-          {categoryStats?.length > 0 && <CategoryPieChart data={categoryStats} />}
-          {topPersonajes?.length  > 0 && <TopPersonajes   data={topPersonajes} />}
+          {categoryStats?.length > 0    && <CategoryPieChart data={categoryStats} />}
+          {topPersonajes?.length  > 0   && <TopPersonajes    data={topPersonajes} />}
+          {noticiasPorMedio?.length > 0  && <MediosChart      data={noticiasPorMedio} />}
           <CategoryColumn title="POLITICA" stories={politica} color="blue"  />
           <CategoryColumn title="ECONOMIA" stories={economia} color="green" />
         </div>
@@ -79,10 +75,12 @@ export default async function Home({ searchParams }) {
 
         {/* DESKTOP */}
         <div className="hidden lg:grid lg:grid-cols-12 gap-6">
+
           <aside className="lg:col-span-3 space-y-6">
-            {categoryStats?.length > 0 && <CategoryPieChart data={categoryStats} />}
-            {topPersonajes?.length  > 0 && <TopPersonajes   data={topPersonajes} />}
+            {categoryStats?.length > 0   && <CategoryPieChart data={categoryStats} />}
+            {topPersonajes?.length  > 0  && <TopPersonajes    data={topPersonajes} />}
             <DateNavigator activeDates={activeDates} />
+            {noticiasPorMedio?.length > 0 && <MediosChart     data={noticiasPorMedio} />}
             <CategoryColumn title="ECONOMIA" stories={economia} color="green" />
           </aside>
 
@@ -94,8 +92,8 @@ export default async function Home({ searchParams }) {
           <aside className="lg:col-span-3">
             <CategoryColumn title="POLITICA" stories={politica} color="blue" />
           </aside>
-        </div>
 
+        </div>
       </div>
     </main>
   );

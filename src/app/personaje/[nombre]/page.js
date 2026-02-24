@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import SentimentPieChart from '@/components/SentimentPieChart';
+import NoticiasPersonaje from '@/components/NoticiasPersonaje';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,7 +11,7 @@ export default async function PersonajePage({ params }) {
   const supabase = createClient();
   
   const resolvedParams = await params;
-  const slug = resolvedParams.nombre; // Ya viene como slug desde la URL
+  const slug = resolvedParams.nombre;
   
   const { data: noticias, error } = await supabase.rpc('get_personaje_details', {
     p_slug: slug
@@ -207,58 +208,13 @@ export default async function PersonajePage({ params }) {
           </div>
         </div>
 
-        {/* Lista de noticias */}
+        {/* Lista de noticias con espectro */}
         <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             Noticias Recientes ({personaje.total_menciones || 0})
           </h2>
 
-          {noticiasReales.length > 0 ? (
-            <div className="space-y-4">
-              {noticiasReales.map((noticia) => (
-                <div key={noticia.noticia_id} className="border-b border-gray-200 pb-4">
-                  {noticia.historia_id && (
-                    <Link 
-                      href={`/historia/${noticia.historia_id}`}
-                      className="text-xs text-blue-600 hover:underline mb-1 block"
-                    >
-                      Historia #{noticia.historia_id}: {noticia.historia_titulo}
-                    </Link>
-                  )}
-                  
-                  <h3 className="font-bold text-gray-900 mb-2">
-                    {noticia.titulo}
-                  </h3>
-
-                  <div className="flex items-center gap-4 text-xs text-gray-600 flex-wrap">
-                    <span className="font-semibold">{noticia.medio_nombre}</span>
-                    <span>{new Date(noticia.created_at).toLocaleDateString('es-CL')}</span>
-                    {noticia.sentimiento && (
-                      <span className={
-                        noticia.sentimiento === 'positivo' ? 'text-green-600' :
-                        noticia.sentimiento === 'negativo' ? 'text-red-600' :
-                        'text-gray-600'
-                      }>
-                        {noticia.sentimiento === 'positivo' && '✓ Positivo'}
-                        {noticia.sentimiento === 'negativo' && '✗ Negativo'}
-                        {noticia.sentimiento === 'neutro' && '→ Neutro'}
-                      </span>
-                    )}
-                    <a 
-                      href={noticia.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      Ver noticia →
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">No hay menciones recientes en los últimos 7 días.</p>
-          )}
+          <NoticiasPersonaje noticias={noticias} />
         </div>
       </div>
     </main>
