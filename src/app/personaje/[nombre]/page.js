@@ -25,10 +25,12 @@ export default async function PersonajePage({ params }) {
 
   if (error) {
     return (
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Error en SQL</h1>
-        <pre className="bg-red-100 p-4 rounded overflow-auto">{JSON.stringify(error, null, 2)}</pre>
-        <p className="mt-4">Slug buscado: {slug}</p>
+      <div className="p-4 sm:p-8">
+        <h1 className="text-xl sm:text-2xl font-bold mb-4">Error en SQL</h1>
+        <pre className="bg-red-100 p-4 rounded overflow-auto text-xs sm:text-sm">
+          {JSON.stringify(error, null, 2)}
+        </pre>
+        <p className="mt-4 text-sm">Slug buscado: {slug}</p>
         <Link href="/" className="text-blue-600 mt-4 block">← Volver</Link>
       </div>
     );
@@ -36,11 +38,13 @@ export default async function PersonajePage({ params }) {
 
   if (!noticias || noticias.length === 0) {
     return (
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Personaje no encontrado</h1>
-        <p>No se encontró el personaje con slug: <strong>{slug}</strong></p>
-        <p className="mt-4">Verifica que:</p>
-        <ul className="list-disc ml-6">
+      <div className="p-4 sm:p-8">
+        <h1 className="text-xl sm:text-2xl font-bold mb-4">Personaje no encontrado</h1>
+        <p className="text-sm sm:text-base">
+          No se encontró el personaje con slug: <strong>{slug}</strong>
+        </p>
+        <p className="mt-4 text-sm">Verifica que:</p>
+        <ul className="list-disc ml-6 text-sm">
           <li>El personaje existe en la tabla `personajes`</li>
           <li>El slug es correcto (sin espacios, en minúsculas)</li>
           <li>Hay datos en entidades_temp</li>
@@ -70,53 +74,53 @@ export default async function PersonajePage({ params }) {
 
   return (
     <main className="min-h-screen bg-neutral-50">
-      {/* Header simple */}
+      {/* Header */}
       <header className="bg-white border-b-2 border-black">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm font-semibold">
             ← Volver a El Diáfano
           </Link>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Perfil del personaje */}
-        <div className="bg-white border-2 border-gray-200 rounded-lg p-6 mb-8">
-          <div className="flex items-start gap-6">
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* Foto */}
             {personaje.personaje_foto ? (
               <img 
                 src={personaje.personaje_foto} 
                 alt={personaje.personaje_nombre}
-                className="w-32 h-32 rounded-full object-cover flex-shrink-0"
+                className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover flex-shrink-0"
               />
             ) : (
-              <div className="w-32 h-32 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 flex-shrink-0">
-                <span className="text-4xl font-bold">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 flex-shrink-0">
+                <span className="text-3xl sm:text-4xl font-bold">
                   {personaje.personaje_nombre.split(' ').map(n => n[0]).join('')}
                 </span>
               </div>
             )}
 
-            <div className="flex-1">
-              <h1 className="text-4xl font-serif font-bold text-gray-900 mb-2">
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-gray-900 mb-2">
                 {personaje.personaje_nombre}
               </h1>
               
               {personaje.personaje_cargo && (
-                <p className="text-lg text-gray-700 mb-1">
+                <p className="text-base sm:text-lg text-gray-700 mb-1">
                   {personaje.personaje_cargo}
                 </p>
               )}
               
               {personaje.personaje_partido && (
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 mb-3 sm:mb-4">
                   {personaje.personaje_partido}
                 </p>
               )}
               
               {personaje.personaje_bio && (
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 text-justify">
                   {personaje.personaje_bio}
                 </p>
               )}
@@ -125,10 +129,10 @@ export default async function PersonajePage({ params }) {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Sentimiento general */}
-          <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
+          <div className="bg-white border-2 border-gray-200 rounded-lg p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
               Sentimiento en Cobertura (7 días)
             </h2>
             
@@ -155,8 +159,8 @@ export default async function PersonajePage({ params }) {
           </div>
 
           {/* Por medio */}
-          <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
+          <div className="bg-white border-2 border-gray-200 rounded-lg p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
               Cobertura por Medio
             </h2>
             
@@ -172,8 +176,10 @@ export default async function PersonajePage({ params }) {
                     return (
                       <div key={medio} className="border-b border-gray-200 pb-2">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-semibold text-sm">{medio}</span>
-                          <span className="text-xs text-gray-600">{stats.total} menciones</span>
+                          <span className="font-semibold text-sm truncate mr-2">{medio}</span>
+                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                            {stats.total} menciones
+                          </span>
                         </div>
                         <div className="flex gap-1 h-2">
                           {pctPos > 0 && (
@@ -208,9 +214,9 @@ export default async function PersonajePage({ params }) {
           </div>
         </div>
 
-        {/* Lista de noticias con espectro */}
-        <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        {/* Lista de noticias */}
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
             Noticias Recientes ({personaje.total_menciones || 0})
           </h2>
 
