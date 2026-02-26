@@ -5,11 +5,11 @@ import Link from 'next/link';
 
 // Configuración del espectro político
 const ESPECTRO = [
-  { valor: 'izquierda',      label: 'Izquierda',       color: '#c0392b', bg: '#fdf0ee', dot: '#e74c3c' },
-  { valor: 'centro_izquierda', label: 'Centro-Izq.',   color: '#e67e22', bg: '#fef6ee', dot: '#f39c12' },
-  { valor: 'centro',         label: 'Centro',           color: '#7f8c8d', bg: '#f4f4f4', dot: '#95a5a6' },
-  { valor: 'centro_derecha', label: 'Centro-Der.',      color: '#2980b9', bg: '#eef4fb', dot: '#3498db' },
-  { valor: 'derecha',        label: 'Derecha',          color: '#1a3a6b', bg: '#eef0f8', dot: '#1a3a6b' },
+  { valor: 'izquierda',      label: 'I',       color: '#c0392b', bg: '#fdf0ee', dot: '#e74c3c' },
+  { valor: 'centro_izquierda', label: 'C.I',   color: '#e67e22', bg: '#fef6ee', dot: '#f39c12' },
+  { valor: 'centro',         label: 'C',           color: '#7f8c8d', bg: '#f4f4f4', dot: '#95a5a6' },
+  { valor: 'centro_derecha', label: 'C.D.',      color: '#2980b9', bg: '#eef4fb', dot: '#3498db' },
+  { valor: 'derecha',        label: 'D',          color: '#1a3a6b', bg: '#eef0f8', dot: '#1a3a6b' },
   { valor: null,             label: 'Sin clasificar',   color: '#bdc3c7', bg: '#f9f9f9', dot: '#bdc3c7' },
 ];
 
