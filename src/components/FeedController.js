@@ -1,5 +1,19 @@
+'use client'
+
 import Link from 'next/link';
 import BiasBar from './BiasBar';
+
+function FechaStory({ fecha }) {
+  if (!fecha) return null
+  return (
+    <span className="text-gray-500">
+      {new Date(fecha).toLocaleString('es-CL', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      })}
+    </span>
+  )
+}
 
 export default function FeedController({ stories }) {
   if (!stories || stories.length === 0) {
@@ -66,16 +80,7 @@ export default function FeedController({ stories }) {
             <span className="text-gray-500">
               Peso: {story.peso_relevancia?.toFixed(1) || '0.0'}
             </span>
-            <span className="text-gray-500">
-              {new Date(story.fecha).toLocaleString('es-CL', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })}
-            </span>
+            <FechaStory fecha={story.fecha} />
           </div>
         </article>
       ))}
