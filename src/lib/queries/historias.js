@@ -115,33 +115,52 @@ export function filtrarPorCategoria(historias, categoria, limite = 6) {
 
 const CATEGORIAS_COLUMNA = ['Economia', 'Politica', 'Economía', 'Política'];
 
+// ─── Ordenamiento por tab ─────────────────────────────────────────────────────
+//
+// NOTA: peso_relevancia varía muy poco entre historias (~84-87),
+// por eso NO sirve para diferenciar Top de Relevancia.
+// Los campos con variación real son: total_medios y total_noticias.
+//
+// RELEVANCIA → peso_relevancia puro (señal de la IA)
+// TOP        → total_noticias primero, desempate total_medios (volumen editorial)
+// COBERTURA  → total_medios primero, desempate total_noticias (amplitud de fuentes)
+// RECIENTES  → fecha descendente
+
 export function ordenarPorTab(historias, tab) {
   const arr = [...historias];
 
+  // RELEVANCIA: orden de la IA, sin interferencia
   if (tab === 'todas') {
     return arr
-      .sort((a, b) => {
-        if (b.total_medios   !== a.total_medios)   return b.total_medios   - a.total_medios;
-        if (b.total_noticias !== a.total_noticias) return b.total_noticias - a.total_noticias;
-        return (b.peso_relevancia || 0) - (a.peso_relevancia || 0);
-      })
+      .sort((a, b) => (b.peso_relevancia || 0) - (a.peso_relevancia || 0))
       .slice(0, 5);
   }
 
+  // TOP: lo más escrito — historias con más noticias publicadas
+  // Una historia con 12 artículos supera a una con 2, aunque tengan
+  // el mismo peso_relevancia. Desempate por medios distintos.
   if (tab === 'top') {
     return arr.sort((a, b) => {
-      if (b.total_medios !== a.total_medios) return b.total_medios - a.total_medios;
+      const notA = a.total_noticias || 0;
+      const notB = b.total_noticias || 0;
+      if (notB !== notA) return notB - notA;
+      return (b.total_medios || 0) - (a.total_medios || 0);
+    });
+  }
+
+  // COBERTURA: amplitud — cuántos medios distintos cubrieron la historia
+  // Una historia en 5 medios distintos supera a una con 10 artículos
+  // pero todos del mismo medio.
+  if (tab === 'cobertura') {
+    return arr.sort((a, b) => {
+      const medA = a.total_medios || 0;
+      const medB = b.total_medios || 0;
+      if (medB !== medA) return medB - medA;
       return (b.total_noticias || 0) - (a.total_noticias || 0);
     });
   }
 
-  if (tab === 'cobertura') {
-    return arr.sort((a, b) => {
-      if (b.total_medios !== a.total_medios) return b.total_medios - a.total_medios;
-      return new Date(b.fecha) - new Date(a.fecha);
-    });
-  }
-
+  // RECIENTES: más nuevas primero
   if (tab === 'recientes') {
     return arr.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   }
